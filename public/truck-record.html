@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>車廂實作紀錄表</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#ffffff;--bg2:#f5f4f1;--bg3:#eeedea;
+  --text:#1a1a1a;--text2:#6b6b6b;--text3:#9b9b9b;
+  --border:#d0cec8;--border2:#b8b6b0;
+  --blue-bg:#e6f1fb;--blue-text:#0c447c;--blue-border:#b5d4f4;
+  --green-bg:#eaf3de;--green-text:#27500a;--green-border:#c0dd97;
+  --red:#a32d2d;--radius:8px;--radius-lg:12px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang TC','Noto Sans TC',sans-serif;background:var(--bg2);color:var(--text);font-size:15px;min-height:100vh}
+
+/* NAV */
+.nav{background:var(--bg);border-bottom:0.5px solid var(--border);padding:0;display:flex;position:sticky;top:0;z-index:100}
+.nav-btn{flex:1;padding:14px 4px;border:none;background:none;font-size:13px;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
+.nav-btn.active{color:var(--text);font-weight:500;border-bottom-color:var(--text)}
+
+/* PAGE */
+.page{display:none;padding:1rem;padding-bottom:6rem;max-width:500px;margin:0 auto}
+.page.active{display:block}
+
+/* HEADER */
+.page-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.page-hdr h1{font-size:18px;font-weight:500}
+.icon-btn{border:none;background:none;cursor:pointer;padding:6px;border-radius:var(--radius);color:var(--text2)}
+.icon-btn:active{background:var(--bg3)}
+
+/* RECORD LIST */
+.rec-list{display:flex;flex-direction:column;gap:8px}
+.rec-card{background:var(--bg);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1rem .8rem;cursor:pointer;transition:border-color .15s}
+.rec-card:active{border-color:var(--border2);background:var(--bg2)}
+.rec-card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px}
+.rec-order{font-size:15px;font-weight:500;color:var(--text)}
+.rec-date{font-size:12px;color:var(--text3)}
+.rec-meta{font-size:13px;color:var(--text2)}
+.rec-actions{display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:.5px solid var(--border)}
+.rec-act-btn{flex:1;padding:7px;border-radius:var(--radius);border:.5px solid var(--border);background:none;font-size:12px;cursor:pointer;color:var(--text2)}
+.rec-act-btn:active{background:var(--bg2)}
+.rec-act-btn.danger{color:var(--red);border-color:#f09595}
+.empty-state{text-align:center;padding:3rem 1rem;color:var(--text3)}
+.empty-state svg{margin-bottom:12px;opacity:.4}
+.empty-state p{font-size:14px}
+
+/* NEW RECORD BTN */
+.fab{position:fixed;bottom:80px;right:20px;width:52px;height:52px;border-radius:50%;background:var(--text);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 12px rgba(0,0,0,.18);font-size:24px;z-index:99}
+.fab:active{opacity:.8;transform:scale(.96)}
+
+/* FORM */
+.sec{font-size:11px;font-weight:500;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin:1.4rem 0 .7rem;padding-bottom:.35rem;border-bottom:.5px solid var(--border)}
+.f{margin-bottom:.85rem}
+.f label{display:block;font-size:13px;color:var(--text2);margin-bottom:.3rem}
+.f input,.f textarea{width:100%;border:.5px solid var(--border);border-radius:var(--radius);padding:9px 11px;font-size:15px;background:var(--bg);color:var(--text);outline:none;appearance:none;-webkit-appearance:none}
+.f input[type=date]{font-size:14px}
+.f textarea{resize:vertical;min-height:60px;line-height:1.5}
+.f input:focus,.f textarea:focus{border-color:var(--border2)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sub{font-size:12px;color:var(--text3);margin:.6rem 0 .3rem}
+.warn{font-size:12px;color:var(--red);margin-top:-6px;margin-bottom:.6rem;display:none}
+.date-card{background:var(--bg);border:.5px solid var(--border);border-radius:var(--radius-lg);padding:.9rem 1rem;margin-bottom:.8rem}
+.date-card .dc-title{font-size:12px;color:var(--text3);font-weight:500;margin-bottom:.7rem}
+.date-card .f{margin-bottom:.6rem}
+.date-card .f:last-child{margin-bottom:0}
+
+/* UPLOAD */
+.upload-box{border:.5px dashed var(--border);border-radius:var(--radius);padding:.85rem;text-align:center;cursor:pointer;background:var(--bg2);margin-bottom:.5rem}
+.upload-box svg{display:block;margin:0 auto 4px;opacity:.45}
+.upload-box span{font-size:12px;color:var(--text3)}
+.upload-box .limit{font-size:11px;color:var(--text3);margin-top:2px}
+.thumbs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:.8rem}
+.thumb-wrap{position:relative;aspect-ratio:4/3}
+.thumb{width:100%;height:100%;object-fit:cover;border-radius:var(--radius);border:.5px solid var(--border);display:block}
+.thumb-del{position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.55);border:none;cursor:pointer;color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;line-height:1}
+.four-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:.8rem}
+.four-slot{border:.5px dashed var(--border);border-radius:var(--radius);aspect-ratio:4/3;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;background:var(--bg2);overflow:hidden;position:relative}
+.four-slot img{width:100%;height:100%;object-fit:cover;display:block}
+.four-slot .slot-label{font-size:12px;color:var(--text3);margin-top:4px}
+.four-slot .slot-del{position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.55);border:none;cursor:pointer;color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center}
+
+/* FORM FOOTER */
+.form-footer{position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-top:.5px solid var(--border);padding:.75rem 1rem;display:none;gap:8px;z-index:100;max-width:500px;margin:0 auto}
+.form-footer.active{display:flex}
+.form-footer-inner{display:flex;gap:8px;width:100%;max-width:500px;margin:0 auto}
+.ff-btn{flex:1;padding:11px;border-radius:var(--radius);font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;border:.5px solid var(--border);background:var(--bg);color:var(--text)}
+.ff-btn:active{opacity:.7}
+.ff-btn.primary{background:var(--text);color:#fff;border-color:var(--text)}
+.ff-btn.pdf{border-color:var(--blue-border);color:var(--blue-text);background:var(--blue-bg)}
+.ff-btn.excel{border-color:var(--green-border);color:var(--green-text);background:var(--green-bg)}
+
+/* STORAGE BAR */
+.storage-bar{background:var(--bg);border:.5px solid var(--border);border-radius:var(--radius);padding:.6rem .9rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between}
+.storage-bar span{font-size:12px;color:var(--text3)}
+.storage-track{width:100px;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden}
+.storage-fill{height:100%;background:var(--text2);border-radius:2px;transition:width .3s}
+
+/* TOAST */
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:rgba(26,26,26,.88);color:#fff;padding:9px 18px;border-radius:20px;font-size:13px;white-space:nowrap;z-index:999;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:none;align-items:flex-end;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--bg);border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:1.2rem 1rem 2rem;width:100%;max-width:500px}
+.modal h3{font-size:16px;font-weight:500;margin-bottom:.5rem}
+.modal p{font-size:14px;color:var(--text2);margin-bottom:1.2rem}
+.modal-btns{display:flex;gap:8px}
+.modal-btns button{flex:1;padding:11px;border-radius:var(--radius);border:.5px solid var(--border);background:none;font-size:14px;cursor:pointer;font-weight:500}
+.modal-btns .modal-danger{color:var(--red);border-color:#f09595}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <button class="nav-btn active" onclick="switchTab('list')">紀錄列表</button>
+  <button class="nav-btn" id="form-tab-btn" onclick="switchTab('form')" style="display:none">填寫表單</button>
+  <button class="nav-btn" onclick="switchTab('settings')">設定</button>
+</nav>
+
+<!-- ===== LIST PAGE ===== -->
+<div class="page active" id="page-list">
+  <div class="page-hdr">
+    <h1>車廂實作紀錄</h1>
+    <span id="rec-count-badge" style="font-size:13px;color:var(--text3)"></span>
+  </div>
+  <div style="margin-bottom:.75rem;position:relative">
+    <input type="search" id="search-input" placeholder="搜尋訂單編號、車型、車身號碼..." oninput="renderList()" style="width:100%;border:.5px solid var(--border);border-radius:var(--radius);padding:9px 11px 9px 36px;font-size:14px;background:var(--bg);color:var(--text);outline:none;appearance:none;-webkit-appearance:none">
+    <svg style="position:absolute;left:11px;top:50%;transform:translateY(-50%);opacity:.4;pointer-events:none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+  </div>
+  <div id="storage-info" class="storage-bar">
+    <span>儲存空間</span>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="storage-track"><div class="storage-fill" id="storage-fill" style="width:0%"></div></div>
+      <span id="storage-text">0 KB</span>
+    </div>
+  </div>
+  <div class="rec-list" id="rec-list"></div>
+</div>
+
+<!-- ===== FORM PAGE ===== -->
+<div class="page" id="page-form">
+  <div class="page-hdr">
+    <button class="icon-btn" onclick="backToList()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <h1 id="form-title">新增紀錄</h1>
+    <button class="icon-btn" onclick="confirmDelete()" id="delete-btn" style="display:none;color:var(--red)">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+    </button>
+  </div>
+
+  <div class="sec">1 — 訂單基本資料</div>
+  <div class="f"><label>訂單編號</label><input type="text" id="order_no" placeholder="例：YJ-2024-001"></div>
+  <div class="f"><label>施作日</label><input type="date" id="date_work"></div>
+
+  <div class="sec">2 — 車輛資料</div>
+  <div class="f"><label>車型</label><input type="text" id="car_type" placeholder="例：冷藏車"></div>
+  <div class="f"><label>噸數 / 尺寸</label><input type="text" id="ton" placeholder="例：5噸"></div>
+  <div class="f"><label>入廠日</label><input type="date" id="date_in"></div>
+  <div class="f">
+    <label>入廠照片（最多4張）</label>
+    <div class="upload-box" onclick="triggerUpload('ph_in')" id="box_in">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      <span>點擊上傳入廠照片</span>
+      <div class="limit" id="lim_in">0 / 4</div>
+      <input type="file" id="ph_in" accept="image/*" multiple style="display:none" onchange="addLimitedThumbs(this,'th_in',4,'lim_in','box_in')">
+    </div>
+    <div class="thumbs" id="th_in"></div>
+  </div>
+  <div class="f"><label>底盤型式</label><input type="text" id="chassis" placeholder="例：平台式"></div>
+  <div class="f"><label>引擎號碼</label><input type="text" id="engine_no" placeholder="引擎號碼"></div>
+  <div class="f"><label>車身號碼</label><input type="text" id="vin" placeholder="車身號碼"></div>
+
+  <div class="sec">3 — 預估尺寸（施作前）</div>
+  <div class="sub">外尺寸 / 內尺寸</div>
+  <div class="g2">
+    <div class="f"><label>外 — 全長 (mm)</label><input type="number" id="pre_ol" placeholder="長"></div>
+    <div class="f"><label>內 — 長 (mm)</label><input type="number" id="pre_il" placeholder="長"></div>
+  </div>
+  <div class="g2">
+    <div class="f"><label>外 — 全寬 (mm)</label><input type="number" id="pre_ow" placeholder="寬"></div>
+    <div class="f"><label>內 — 寬 (mm)</label><input type="number" id="pre_iw" placeholder="寬"></div>
+  </div>
+  <div class="g2">
+    <div class="f"><label>外 — 全高 (mm)</label><input type="number" id="pre_oh" placeholder="高"></div>
+    <div class="f"><label>內 — 高 (mm)</label><input type="number" id="pre_ih" placeholder="高"></div>
+  </div>
+  <div class="f"><label>預估距地高 (mm)</label><input type="number" id="pre_ground" placeholder="距地高"></div>
+
+  <div class="sec">4 — 廂體材料</div>
+  <div class="f"><label>廂體隔熱 / 板材</label><input type="text" id="panel_mat" placeholder="例：PU發泡板 75mm"></div>
+
+  <div class="sec">5 — 輪距資料</div>
+  <div class="g2">
+    <div class="f"><label>軸距 (mm)</label><input type="number" id="axle_dist" placeholder="軸距"></div>
+    <div class="f"><label>最遠軸距 (mm)</label><input type="number" id="axle_far" placeholder="最遠軸距"></div>
+  </div>
+  <div class="g2">
+    <div class="f"><label>前輪距 (mm)</label><input type="number" id="wheel_f" placeholder="前輪距"></div>
+    <div class="f"><label>後輪距 (mm)</label><input type="number" id="wheel_r" placeholder="後輪距"></div>
+  </div>
+
+  <div class="sec">6 — 冷凍機</div>
+  <div class="f"><label>冷凍機型號</label><input type="text" id="ref_model" placeholder="例：Carrier Vector 1800"></div>
+  <div class="f"><label>機組編號</label><input type="text" id="ref_unit_no" placeholder="機組編號"></div>
+  <div class="g2">
+    <div class="f"><label>散熱路編號</label><input type="text" id="ref_cond" placeholder="散熱路"></div>
+    <div class="f"><label>蒸發路編號</label><input type="text" id="ref_evap" placeholder="蒸發路"></div>
+  </div>
+  <div class="f"><label>安裝日期</label><input type="date" id="ref_date"></div>
+  <div class="g2">
+    <div class="f"><label>發動機型號</label><input type="text" id="ref_eng_m" placeholder="型號"></div>
+    <div class="f"><label>發動機序列號</label><input type="text" id="ref_eng_s" placeholder="序列號"></div>
+  </div>
+
+  <div class="sec">7 — 車廂實作完成尺寸</div>
+  <div class="sub">外尺寸 / 內尺寸</div>
+  <div class="g2">
+    <div class="f"><label>外 — 全長 (mm)</label><input type="number" id="act_ol" placeholder="長"></div>
+    <div class="f"><label>內 — 長 (mm)</label><input type="number" id="act_il" placeholder="長"></div>
+  </div>
+  <div class="g2">
+    <div class="f"><label>外 — 全寬 (mm)</label><input type="number" id="act_ow" placeholder="寬"></div>
+    <div class="f"><label>內 — 寬 (mm)</label><input type="number" id="act_iw" placeholder="寬"></div>
+  </div>
+  <div class="g2">
+    <div class="f"><label>外 — 全高 (mm)</label><input type="number" id="act_oh" placeholder="高"></div>
+    <div class="f"><label>內 — 高 (mm)</label><input type="number" id="act_ih" placeholder="高"></div>
+  </div>
+  <div class="g2">
+    <div class="f"><label>實際距地高 (mm)</label><input type="number" id="act_ground" placeholder="距地高"></div>
+    <div class="f"><label>後懸 (mm)</label><input type="number" id="rear_oh" placeholder="後懸"></div>
+  </div>
+
+  <div class="sec">8 — 重量資料</div>
+  <div class="g2">
+    <div class="f"><label>車輛空重 (kg)</label><input type="number" id="w_empty" placeholder="0"></div>
+    <div class="f"><label>前軸重 (kg)</label><input type="number" id="w_front" placeholder="0"></div>
+  </div>
+  <div class="g2">
+    <div class="f"><label>後軸重 (kg)</label><input type="number" id="w_rear" placeholder="0"></div>
+    <div class="f"><label>備胎數量 / 規格</label><input type="text" id="spare" placeholder="例：1個/7.00R16"></div>
+  </div>
+
+  <div class="sec">9 — 反光標識裝設長度（距各末端）</div>
+  <div class="f"><label>第9項 — 距各末端 (mm)</label><input type="number" id="ref9" placeholder="距各末端距離"></div>
+
+  <div class="sec">10 — 反光標識位置（第12項）</div>
+  <div class="f"><label>下方反光標識 — 下緣距地高 (mm)</label><input type="number" id="ref12" placeholder="下緣距地高"></div>
+
+  <div class="sec">11 — 反光標識位置（第13項）</div>
+  <div class="f"><label>上方反光標識 — 上緣距地高 (mm)</label><input type="number" id="ref13_top" placeholder="上緣距地高"></div>
+  <div class="f"><label>距地高 (mm)</label><input type="number" id="ref13_h" placeholder="距地高"></div>
+
+  <div class="sec">12 — 上方輪廓反光標識（第14項）</div>
+  <div class="f"><label>距車頂距離 (mm)</label><input type="number" id="ref14" placeholder="距車頂"></div>
+
+  <div class="sec">13 — 車輛後方反光標識（第15項）</div>
+  <div class="f"><label>距煞車燈距離 (mm)（需 ≥ 200mm）</label><input type="number" id="ref15" placeholder="實測距離" oninput="chkRef15(this)"></div>
+  <div class="warn" id="ref15_warn">⚠ 未達 200mm 規定，請確認</div>
+
+  <div class="sec">14 — 燈具認證</div>
+  <div class="f"><label>燈具廠商名稱</label><input type="text" id="lamp_vendor" placeholder="例：堤摩西、帝寶"></div>
+
+  <div class="sec">15 — 底盤資料上傳</div>
+  <div class="f"><label>底盤報告上傳</label>
+    <div class="upload-box" onclick="triggerUpload('ph_report')">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+      <span>底盤報告（圖片）</span>
+      <input type="file" id="ph_report" accept="image/*" multiple style="display:none" onchange="addLimitedThumbs(this,'th_report',10,'','')">
+    </div>
+    <div class="thumbs" id="th_report"></div>
+  </div>
+  <div class="f"><label>底盤圖上傳</label>
+    <div class="upload-box" onclick="triggerUpload('ph_chassis')">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+      <span>底盤圖（圖片）</span>
+      <input type="file" id="ph_chassis" accept="image/*" multiple style="display:none" onchange="addLimitedThumbs(this,'th_chassis',10,'','')">
+    </div>
+    <div class="thumbs" id="th_chassis"></div>
+  </div>
+
+  <div class="sec">16 — 完成車四視圖</div>
+  <div class="f">
+    <label>前、後、左、右 各一張</label>
+    <div class="four-grid">
+      <div class="four-slot" id="slot0" onclick="triggerSlot(0)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span class="slot-label">前視</span></div>
+      <div class="four-slot" id="slot1" onclick="triggerSlot(1)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span class="slot-label">後視</span></div>
+      <div class="four-slot" id="slot2" onclick="triggerSlot(2)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span class="slot-label">左視</span></div>
+      <div class="four-slot" id="slot3" onclick="triggerSlot(3)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span class="slot-label">右視</span></div>
+    </div>
+    <input type="file" id="slot_input" accept="image/*" style="display:none" onchange="setSlotPhoto(this)">
+  </div>
+  <div class="f">
+    <label>其他照片（最多10張）</label>
+    <div class="upload-box" onclick="triggerUpload('ph_misc')">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      <span>其他可上傳照片</span>
+      <input type="file" id="ph_misc" accept="image/*" multiple style="display:none" onchange="addLimitedThumbs(this,'th_misc',10,'','')">
+    </div>
+    <div class="thumbs" id="th_misc"></div>
+  </div>
+
+  <div class="sec">17 — 認證送件時間</div>
+  <div class="date-card">
+    <div class="dc-title">送件時間紀錄</div>
+    <div class="f"><label>檢測日期</label><input type="date" id="date_inspect"></div>
+    <div class="f"><label>080 檢測日期</label><input type="date" id="date_080"></div>
+    <div class="f"><label>送交通部日期</label><input type="date" id="date_submit"></div>
+    <div class="f"><label>合格證派發日期</label><input type="date" id="date_cert"></div>
+  </div>
+
+  <div class="sec">18 — 認證方式與合格證</div>
+  <div class="f"><label>認證型式編號</label><input type="text" id="cert_type" placeholder="例：A0001、B0023"></div>
+  <div class="f"><label>合格證上傳</label>
+    <div class="upload-box" onclick="triggerUpload('ph_cert')">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+      <span>合格證圖片</span>
+      <input type="file" id="ph_cert" accept="image/*" multiple style="display:none" onchange="addLimitedThumbs(this,'th_cert',10,'','')">
+    </div>
+    <div class="thumbs" id="th_cert"></div>
+  </div>
+
+  <div class="sec">19 — 備註</div>
+  <div class="f"><label>其他備註事項</label><textarea id="note" placeholder="備註..."></textarea></div>
+</div>
+
+<!-- ===== SETTINGS PAGE ===== -->
+<div class="page" id="page-settings">
+  <div class="page-hdr"><h1>設定</h1></div>
+  <div style="background:var(--bg);border:.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:1rem">
+    <div style="padding:1rem;border-bottom:.5px solid var(--border)">
+      <div style="font-size:14px;font-weight:500;margin-bottom:2px">儲存空間使用量</div>
+      <div style="font-size:13px;color:var(--text2)" id="settings-storage-detail"></div>
+    </div>
+    <button onclick="exportAllExcel()" style="width:100%;padding:1rem;border:none;background:none;text-align:left;font-size:14px;cursor:pointer;color:var(--blue-text);border-bottom:.5px solid var(--border)">匯出全部紀錄為 Excel</button>
+    <button onclick="confirmClearAll()" style="width:100%;padding:1rem;border:none;background:none;text-align:left;font-size:14px;cursor:pointer;color:var(--red)">清除全部紀錄</button>
+  </div>
+  <div style="font-size:12px;color:var(--text3);line-height:1.6;padding:.5rem 0">
+    <p>· 所有資料儲存在這個裝置的瀏覽器本地，不會上傳到任何伺服器</p>
+    <p style="margin-top:4px">· 換瀏覽器或清除瀏覽器資料時，紀錄會消失，建議定期匯出備份</p>
+    <p style="margin-top:4px">· 照片以 Base64 格式儲存，佔用空間較大，建議填完後匯出PDF即可</p>
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="fab" id="fab-btn" onclick="newRecord()" aria-label="新增紀錄" title="新增紀錄">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+</button>
+
+<!-- FORM FOOTER -->
+<div class="form-footer" id="form-footer">
+  <div class="form-footer-inner">
+    <button class="ff-btn primary" onclick="saveRecord()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      儲存
+    </button>
+    <button class="ff-btn pdf" onclick="exportPDF()">PDF</button>
+    <button class="ff-btn excel" onclick="exportExcel()">Excel</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h3 id="modal-title"></h3>
+    <p id="modal-msg"></p>
+    <div class="modal-btns">
+      <button onclick="closeModal()">取消</button>
+      <button class="modal-danger" id="modal-confirm-btn"></button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+var STORE_KEY='yiju_records';
+var currentId=null;
+var currentSlot=0;
+var slotLabels=['前視','後視','左視','右視'];
+var counts={th_in:0,th_report:0,th_chassis:0,th_misc:0,th_cert:0};
+var modalAction=null;
+
+// ── STORAGE ──
+function loadRecords(){
+  try{return JSON.parse(localStorage.getItem(STORE_KEY))||[];}catch(e){return[];}
+}
+function saveRecords(recs){
+  try{localStorage.setItem(STORE_KEY,JSON.stringify(recs));}catch(e){showToast('儲存空間不足，請先匯出備份');}
+}
+function getStorageKB(){
+  var s=localStorage.getItem(STORE_KEY)||'';
+  return Math.round(s.length*2/1024);
+}
+function updateStorageUI(){
+  var kb=getStorageKB();
+  var pct=Math.min(100,Math.round(kb/5120*100));
+  var el=document.getElementById('storage-fill');
+  if(el)el.style.width=pct+'%';
+  var txt=document.getElementById('storage-text');
+  if(txt)txt.textContent=kb>1024?(kb/1024).toFixed(1)+' MB':kb+' KB';
+  var det=document.getElementById('settings-storage-detail');
+  if(det){
+    var recs=loadRecords();
+    det.textContent='共 '+recs.length+' 筆紀錄，已使用 '+(kb>1024?(kb/1024).toFixed(1)+' MB':kb+' KB')+' / 約 5 MB';
+  }
+}
+
+// ── TAB ──
+function switchTab(tab){
+  ['list','form','settings'].forEach(function(t){
+    document.getElementById('page-'+t).classList.toggle('active',t===tab);
+  });
+  document.querySelectorAll('.nav-btn').forEach(function(b,i){
+    b.classList.toggle('active',['list','form','settings'][i]===tab);
+  });
+  var footer=document.getElementById('form-footer');
+  footer.classList.toggle('active',tab==='form');
+  var fab=document.getElementById('fab-btn');
+  fab.style.display=tab==='list'?'flex':'none';
+  var ft=document.getElementById('form-tab-btn');
+  ft.style.display=tab==='form'?'flex':'none';
+  if(tab==='settings')updateStorageUI();
+}
+
+// ── LIST ──
+function renderList(){
+  var recs=loadRecords();
+  var kw=(document.getElementById('search-input')||{}).value||'';
+  kw=kw.trim().toLowerCase();
+  var filtered=kw?recs.filter(function(r){
+    return['order_no','car_type','vin','engine_no','chassis','ton','ref_model','cert_type','lamp_vendor'].some(function(f){
+      return(r[f]||'').toLowerCase().indexOf(kw)>=0;
+    });
+  }):recs;
+  var el=document.getElementById('rec-list');
+  var badge=document.getElementById('rec-count-badge');
+  badge.textContent=recs.length?(kw?filtered.length+' / '+recs.length+' 筆':recs.length+' 筆'):'';
+  updateStorageUI();
+  if(!recs.length){
+    el.innerHTML='<div class="empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><p>尚無紀錄<br>點右下角 + 新增</p></div>';
+    return;
+  }
+  if(kw&&!filtered.length){
+    el.innerHTML='<div class="empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><p>找不到「'+kw+'」<br>試試其他關鍵字</p></div>';
+    return;
+  }
+  el.innerHTML=filtered.slice().reverse().map(function(r){
+    return'<div class="rec-card" onclick="openRecord(\''+r.id+'\')">'
+      +'<div class="rec-card-top"><div><div class="rec-order">'+(r.order_no||'（未填訂單編號）')+'</div><div class="rec-meta">'+(r.car_type||'')+(r.ton?' · '+r.ton:'')+'</div></div><div class="rec-date">'+(r.date_work||r._saved||'')+'</div></div>'
+      +'<div class="rec-actions">'
+      +'<button class="rec-act-btn" onclick="event.stopPropagation();openRecord(\''+r.id+'\')">繼續填寫</button>'
+      +'<button class="rec-act-btn" onclick="event.stopPropagation();exportRecordPDF(\''+r.id+'\')">PDF</button>'
+      +'<button class="rec-act-btn" onclick="event.stopPropagation();exportRecordExcel(\''+r.id+'\')">Excel</button>'
+      +'<button class="rec-act-btn danger" onclick="event.stopPropagation();confirmDeleteId(\''+r.id+'\')">刪除</button>'
+      +'</div></div>';
+  }).join('');
+}
+
+// ── FORM ──
+function newRecord(){
+  currentId=null;
+  clearForm();
+  document.getElementById('form-title').textContent='新增紀錄';
+  document.getElementById('delete-btn').style.display='none';
+  document.getElementById('date_work').value=new Date().toISOString().split('T')[0];
+  switchTab('form');
+  window.scrollTo(0,0);
+}
+
+function openRecord(id){
+  var recs=loadRecords();
+  var rec=recs.find(function(r){return r.id===id});
+  if(!rec)return;
+  currentId=id;
+  clearForm();
+  fillForm(rec);
+  document.getElementById('form-title').textContent='編輯紀錄';
+  document.getElementById('delete-btn').style.display='flex';
+  switchTab('form');
+  window.scrollTo(0,0);
+}
+
+function backToList(){
+  switchTab('list');
+  renderList();
+}
+
+var FIELDS=['order_no','date_work','car_type','ton','date_in','chassis','engine_no','vin',
+  'pre_ol','pre_il','pre_ow','pre_iw','pre_oh','pre_ih','pre_ground','panel_mat',
+  'axle_dist','axle_far','wheel_f','wheel_r',
+  'ref_model','ref_unit_no','ref_cond','ref_evap','ref_date','ref_eng_m','ref_eng_s',
+  'act_ol','act_il','act_ow','act_iw','act_oh','act_ih','act_ground','rear_oh',
+  'w_empty','w_front','w_rear','spare',
+  'ref9','ref12','ref13_top','ref13_h','ref14','ref15',
+  'lamp_vendor','date_inspect','date_080','date_submit','date_cert','cert_type','note'];
+
+var PHOTO_FIELDS=['th_in','th_report','th_chassis','th_misc','th_cert'];
+var SLOT_IDS=['slot0','slot1','slot2','slot3'];
+
+function collectData(){
+  var d={id:currentId||('r'+Date.now()),_saved:new Date().toLocaleDateString('zh-TW')};
+  FIELDS.forEach(function(f){var e=document.getElementById(f);d[f]=e?e.value:'';});
+  PHOTO_FIELDS.forEach(function(tid){
+    var imgs=document.getElementById(tid).querySelectorAll('img');
+    d[tid]=Array.from(imgs).map(function(i){return i.src});
+  });
+  d.slots=SLOT_IDS.map(function(sid){
+    var s=document.getElementById(sid);
+    var img=s.querySelector('img');
+    return img?img.src:'';
+  });
+  return d;
+}
+
+function fillForm(d){
+  FIELDS.forEach(function(f){var e=document.getElementById(f);if(e&&d[f]!==undefined)e.value=d[f];});
+  PHOTO_FIELDS.forEach(function(tid){
+    var c=document.getElementById(tid);
+    if(!d[tid])return;
+    d[tid].forEach(function(src){
+      var wrap=document.createElement('div');wrap.className='thumb-wrap';
+      var img=document.createElement('img');img.src=src;img.className='thumb';
+      var del=document.createElement('button');del.className='thumb-del';del.innerHTML='&times;';
+      del.onclick=function(){wrap.remove();counts[tid]=Math.max(0,(counts[tid]||1)-1);};
+      wrap.appendChild(img);wrap.appendChild(del);c.appendChild(wrap);
+      counts[tid]=(counts[tid]||0)+1;
+    });
+  });
+  if(d.slots){
+    d.slots.forEach(function(src,i){
+      if(!src)return;
+      var slot=document.getElementById('slot'+i);
+      var idx=i;
+      slot.innerHTML='<img src="'+src+'" style="width:100%;height:100%;object-fit:cover;display:block">'
+        +'<button class="slot-del" onclick="clearSlot(event,'+idx+')">×</button>';
+      slot.onclick=function(){triggerSlot(idx)};
+    });
+  }
+  if(d.ref15){
+    var v=parseInt(d.ref15)||0;
+    document.getElementById('ref15_warn').style.display=(v>0&&v<200)?'block':'none';
+  }
+  var limEl=document.getElementById('lim_in');
+  if(limEl)limEl.textContent=(counts['th_in']||0)+' / 4';
+}
+
+function clearForm(){
+  FIELDS.forEach(function(f){var e=document.getElementById(f);if(e)e.value='';});
+  PHOTO_FIELDS.forEach(function(tid){
+    document.getElementById(tid).innerHTML='';
+    counts[tid]=0;
+  });
+  SLOT_IDS.forEach(function(sid,i){
+    var s=document.getElementById(sid);
+    s.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span class="slot-label">'+slotLabels[i]+'</span>';
+    s.onclick=(function(idx){return function(){triggerSlot(idx)}})(i);
+  });
+  document.getElementById('ref15_warn').style.display='none';
+  document.getElementById('lim_in').textContent='0 / 4';
+  document.getElementById('box_in').style.opacity='1';
+}
+
+function saveRecord(){
+  var d=collectData();
+  var recs=loadRecords();
+  var idx=recs.findIndex(function(r){return r.id===d.id});
+  if(idx>=0)recs[idx]=d; else recs.push(d);
+  saveRecords(recs);
+  currentId=d.id;
+  document.getElementById('form-title').textContent='編輯紀錄';
+  document.getElementById('delete-btn').style.display='flex';
+  showToast('已儲存');
+  updateStorageUI();
+}
+
+// ── PHOTOS ──
+function triggerUpload(id){document.getElementById(id).click()}
+function triggerSlot(i){currentSlot=i;document.getElementById('slot_input').value='';document.getElementById('slot_input').click()}
+
+function setSlotPhoto(input){
+  var f=input.files[0];if(!f)return;
+  var r=new FileReader();
+  r.onload=function(e){
+    var s=document.getElementById('slot'+currentSlot);var idx=currentSlot;
+    s.innerHTML='<img src="'+e.target.result+'" style="width:100%;height:100%;object-fit:cover;display:block">'
+      +'<button class="slot-del" onclick="clearSlot(event,'+idx+')">×</button>';
+    s.onclick=function(){triggerSlot(idx)};
+  };
+  r.readAsDataURL(f);
+}
+
+function clearSlot(e,i){
+  e.stopPropagation();
+  var s=document.getElementById('slot'+i);
+  s.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span class="slot-label">'+slotLabels[i]+'</span>';
+  s.onclick=(function(idx){return function(){triggerSlot(idx)}})(i);
+}
+
+function addLimitedThumbs(input,tid,max,limId,boxId){
+  var c=document.getElementById(tid);
+  var cur=counts[tid]||0;var remaining=max-cur;
+  if(remaining<=0)return;
+  Array.from(input.files).slice(0,remaining).forEach(function(f){
+    if(!f.type.startsWith('image/'))return;
+    var r=new FileReader();
+    r.onload=function(e){
+      var wrap=document.createElement('div');wrap.className='thumb-wrap';
+      var img=document.createElement('img');img.src=e.target.result;img.className='thumb';
+      var del=document.createElement('button');del.className='thumb-del';del.innerHTML='&times;';
+      del.onclick=function(){wrap.remove();counts[tid]=Math.max(0,(counts[tid]||1)-1);if(limId)document.getElementById(limId).textContent=counts[tid]+' / '+max;if(boxId)document.getElementById(boxId).style.opacity='1';};
+      wrap.appendChild(img);wrap.appendChild(del);c.appendChild(wrap);
+      counts[tid]=(counts[tid]||0)+1;
+      if(limId)document.getElementById(limId).textContent=counts[tid]+' / '+max;
+      if(boxId&&counts[tid]>=max)document.getElementById(boxId).style.opacity='0.4';
+    };
+    r.readAsDataURL(f);
+  });
+  input.value='';
+}
+
+function chkRef15(el){
+  var v=parseInt(el.value)||0;
+  document.getElementById('ref15_warn').style.display=(v>0&&v<200)?'block':'none';
+}
+
+// ── EXPORT ──
+function buildRows(d){
+  var labels=[
+    ['訂單編號','order_no'],['施作日','date_work'],['車型','car_type'],['噸數/尺寸','ton'],
+    ['入廠日','date_in'],['底盤型式','chassis'],['引擎號碼','engine_no'],['車身號碼','vin'],
+    ['預估外尺寸 全長(mm)','pre_ol'],['預估外尺寸 全寬(mm)','pre_ow'],['預估外尺寸 全高(mm)','pre_oh'],
+    ['預估內尺寸 長(mm)','pre_il'],['預估內尺寸 寬(mm)','pre_iw'],['預估內尺寸 高(mm)','pre_ih'],
+    ['預估距地高(mm)','pre_ground'],['廂體板材','panel_mat'],
+    ['軸距(mm)','axle_dist'],['最遠軸距(mm)','axle_far'],['前輪距(mm)','wheel_f'],['後輪距(mm)','wheel_r'],
+    ['冷凍機型號','ref_model'],['機組編號','ref_unit_no'],['散熱路編號','ref_cond'],['蒸發路編號','ref_evap'],
+    ['冷凍機安裝日期','ref_date'],['發動機型號','ref_eng_m'],['發動機序列號','ref_eng_s'],
+    ['實作外尺寸 全長(mm)','act_ol'],['實作外尺寸 全寬(mm)','act_ow'],['實作外尺寸 全高(mm)','act_oh'],
+    ['實作內尺寸 長(mm)','act_il'],['實作內尺寸 寬(mm)','act_iw'],['實作內尺寸 高(mm)','act_ih'],
+    ['實際距地高(mm)','act_ground'],['後懸(mm)','rear_oh'],
+    ['車輛空重(kg)','w_empty'],['前軸重(kg)','w_front'],['後軸重(kg)','w_rear'],['備胎數量/規格','spare'],
+    ['第9項 距各末端(mm)','ref9'],['第12項 下緣距地高(mm)','ref12'],
+    ['第13項 上緣距地高(mm)','ref13_top'],['第13項 距地高(mm)','ref13_h'],
+    ['第14項 距車頂(mm)','ref14'],['第15項 距煞車燈(mm)','ref15'],
+    ['燈具廠商名稱','lamp_vendor'],
+    ['檢測日期','date_inspect'],['080檢測日期','date_080'],['送交通部日期','date_submit'],
+    ['合格證派發日期','date_cert'],['認證型式編號','cert_type'],['備註','note']
+  ];
+  return labels.map(function(l){return[l[0],d[l[1]]||'']});
+}
+
+function exportRecordPDF(id){
+  var recs=loadRecords();
+  var d=recs.find(function(r){return r.id===id});
+  if(!d)return;
+  generatePDF(d);
+}
+function exportRecordExcel(id){
+  var recs=loadRecords();
+  var d=recs.find(function(r){return r.id===id});
+  if(!d)return;
+  generateExcel(d);
+}
+function exportPDF(){generatePDF(collectData())}
+function exportExcel(){generateExcel(collectData())}
+
+function generatePDF(d){
+  var rows=buildRows(d);
+  var trs=rows.map(function(r){
+    return'<tr><td style="padding:5px 8px;border:.5px solid #ccc;font-size:12px;color:#555;background:#f9f8f6;width:38%;white-space:nowrap">'+r[0]+'</td><td style="padding:5px 8px;border:.5px solid #ccc;font-size:13px">'+r[1]+'</td></tr>';
+  }).join('');
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>車廂實作紀錄</title>'
+    +'<style>body{font-family:serif;padding:28px;color:#222;max-width:800px;margin:auto}h1{font-size:20px;margin-bottom:4px}p.sub{font-size:12px;color:#666;margin-bottom:16px}table{width:100%;border-collapse:collapse}@media print{.np{display:none}}</style></head><body>'
+    +'<h1>車廂實作紀錄表</h1><p class="sub">訂單：'+(d.order_no||'')+'　車型：'+(d.car_type||'')+'　施作日：'+(d.date_work||'')+'</p>'
+    +'<table>'+trs+'</table><br>'
+    +'<button class="np" onclick="window.print()" style="padding:8px 20px;font-size:14px;cursor:pointer;margin-top:12px">列印 / 儲存為 PDF</button></body></html>';
+  var blob=new Blob([html],{type:'text/html;charset=utf-8'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='車廂紀錄_'+(d.order_no||'未命名')+'.html';
+  a.click();
+}
+
+function generateExcel(d){
+  var rows=buildRows(d).map(function(r){return{欄位:r[0],內容:r[1]}});
+  var ws=XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=[{wch:30},{wch:36}];
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'車廂實作紀錄');
+  XLSX.writeFile(wb,'車廂紀錄_'+(d.order_no||'未命名')+'_'+(d.date_work||new Date().toISOString().slice(0,10))+'.xlsx');
+}
+
+function exportAllExcel(){
+  var recs=loadRecords();
+  if(!recs.length){showToast('尚無紀錄');return;}
+  var allRows=[];
+  recs.forEach(function(d,i){
+    if(i>0)allRows.push({欄位:'',內容:''});
+    allRows.push({欄位:'── 第'+(i+1)+'筆：'+(d.order_no||'未命名')+' ──',內容:''});
+    buildRows(d).forEach(function(r){allRows.push({欄位:r[0],內容:r[1]})});
+  });
+  var ws=XLSX.utils.json_to_sheet(allRows);
+  ws['!cols']=[{wch:30},{wch:36}];
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'全部紀錄');
+  XLSX.writeFile(wb,'車廂紀錄_全部_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+// ── DELETE ──
+function confirmDelete(){
+  if(!currentId)return;
+  showModal('確定刪除？','此紀錄將永久刪除，無法復原','刪除',function(){
+    var recs=loadRecords().filter(function(r){return r.id!==currentId});
+    saveRecords(recs);
+    closeModal();
+    backToList();
+    showToast('已刪除');
+  });
+}
+function confirmDeleteId(id){
+  showModal('確定刪除？','此紀錄將永久刪除，無法復原','刪除',function(){
+    var recs=loadRecords().filter(function(r){return r.id!==id});
+    saveRecords(recs);
+    closeModal();
+    renderList();
+    showToast('已刪除');
+  });
+}
+function confirmClearAll(){
+  var recs=loadRecords();
+  showModal('清除全部紀錄？','共 '+recs.length+' 筆紀錄將永久刪除','全部清除',function(){
+    localStorage.removeItem(STORE_KEY);
+    closeModal();
+    renderList();
+    updateStorageUI();
+    showToast('已清除');
+  });
+}
+
+// ── MODAL ──
+function showModal(title,msg,btnText,action){
+  document.getElementById('modal-title').textContent=title;
+  document.getElementById('modal-msg').textContent=msg;
+  document.getElementById('modal-confirm-btn').textContent=btnText;
+  modalAction=action;
+  document.getElementById('modal-overlay').classList.add('show');
+}
+function closeModal(){document.getElementById('modal-overlay').classList.remove('show');modalAction=null;}
+document.getElementById('modal-confirm-btn').onclick=function(){if(modalAction)modalAction();};
+document.getElementById('modal-overlay').onclick=function(e){if(e.target===this)closeModal();};
+
+// ── TOAST ──
+function showToast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show')},2000);
+}
+
+// ── INIT ──
+renderList();
+updateStorageUI();
+</script>
+</body>
+</html>
