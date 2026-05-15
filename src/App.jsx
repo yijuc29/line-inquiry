@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import * as XLSX from "https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs";
 
 // ─── 設定區：Google Sheets 串接（設定好後填入） ────────────────
-const GOOGLE_SHEET_URL = ""; // 填入你的 Google Apps Script Web App URL
+const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbxYhlllyNApKSUATQOSoEiB_B2yk-ueWiItmgcIsY9nVHUciydc8oMPKRFiHJ3st9aOFQ/exec"; // 填入你的 Google Apps Script Web App URL
 
 // ─── 常數 ────────────────────────────────────────────────────
 const STORE_KEY = "yiju_inquiries_v2";
