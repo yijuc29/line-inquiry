@@ -189,8 +189,26 @@ function BodyForm({ data, set }) {
         <Field label="外板"><Toggle options={["FRP纖維板","白鐵平板","白鐵浪板"]} value={data.outerPanel||""} onChange={v=>set({...data,outerPanel:v})} /></Field>
         <Field label="內板"><Toggle options={["烤漆平板","白鐵平板","其他"]} value={data.innerPanel||""} onChange={v=>set({...data,innerPanel:v})} /></Field>
         {data.innerPanel==="其他" && <Field label="內板說明"><Input value={data.innerPanelNote||""} onChange={v=>set({...data,innerPanelNote:v})} placeholder="請說明" /></Field>}
-        <Field label="內底板"><Toggle options={["1.0白鐵花板","2.0白鐵花板","3.0白鐵花板","5.0鋁花板+骨架","底板補強","其他"]} value={data.floorPanel||""} onChange={v=>set({...data,floorPanel:v})} /></Field>
-        {data.floorPanel==="其他" && <Field label="底板說明"><Input value={data.floorNote||""} onChange={v=>set({...data,floorNote:v})} placeholder="請說明" /></Field>}
+        <Field label="內底板（可複選）">
+          <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+            {["1.0白鐵花板","2.0白鐵花板","3.0白鐵花板","5.0鋁花板+骨架","底板補強","其他"].map(opt => {
+              const selected = (data.floorPanels || []).includes(opt);
+              return (
+                <button key={opt} onClick={()=>{
+                  const cur = data.floorPanels || [];
+                  const next = selected ? cur.filter(v=>v!==opt) : [...cur, opt];
+                  set({...data, floorPanels: next});
+                }} style={{
+                  padding:"7px 14px", borderRadius:7, border:"1px solid", cursor:"pointer", fontFamily:"inherit",
+                  borderColor: selected ? "#00A8E8" : "#1C3044",
+                  background:  selected ? "#001A2A" : "transparent",
+                  color:       selected ? "#00A8E8" : "#4A7090", fontSize:13,
+                }}>{opt}</button>
+              );
+            })}
+          </div>
+        </Field>
+        {(data.floorPanels||[]).includes("其他") && <Field label="底板說明"><Input value={data.floorNote||""} onChange={v=>set({...data,floorNote:v})} placeholder="請說明" /></Field>}
         <Field label="特殊規格說明"><Textarea value={data.specialSpec||""} onChange={v=>set({...data,specialSpec:v})} placeholder="其他特殊規格" rows={2} /></Field>
       </Section>
       <Section title="標準三門" accent="#4A90D9">
@@ -236,7 +254,7 @@ function buildPdfRows(rec) {
       ["車廂厚度", s.thickness+(s.thicknessNote?" - "+s.thicknessNote:"")],
       ["冷凍機", s.freezerType||""],["外板", s.outerPanel||""],
       ["內板", s.innerPanel+(s.innerPanelNote?" - "+s.innerPanelNote:"")],
-      ["內底板", s.floorPanel+(s.floorNote?" - "+s.floorNote:"")],
+    ["內底板", (s.floorPanels||[s.floorPanel||""]).filter(Boolean).join("、")+(s.floorNote?" - "+s.floorNote:"")],
       ["特殊規格", s.specialSpec||""],["駕駛邊門", s.doorDriver||""],
       ["副駕邊門", s.doorPassenger||""],["後門", s.doorRear||""],
       ["其他門", s.doorOther||""],["護欄", s.railing||""],["其他配件", s.accessories||""]);
@@ -352,7 +370,7 @@ export default function App() {
               freezerType: r["冷凍機"] || "",
               outerPanel: r["外板"] || "",
               innerPanel: r["內板"] || "",
-              floorPanel: r["內底板"] || "",
+              floorPanels: r["內底板"] ? r["內底板"].split("、").filter(v=>v&&!v.includes(" - ")) : [],
               specialSpec: r["特殊規格"] || "",
               doorDriver: r["駕駛邊門"] || "",
               doorPassenger: r["副駕邊門"] || "",
