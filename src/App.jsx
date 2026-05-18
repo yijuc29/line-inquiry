@@ -652,7 +652,11 @@ export default function App() {
             <div style={{ fontSize:15, fontWeight:700 }}>客戶詢價單</div>
             <div style={{ fontSize:11, color:C.muted }}>填寫完成後業務盡快與您聯繫</div>
           </div>
-          <button onClick={()=>setView("admin")} style={{ ...BTN_GHOST, fontSize:12, padding:"6px 12px" }}>後台 →</button>
+          <button onClick={()=>{
+            const pwd = window.prompt("請輸入後台密碼：");
+            if (pwd === "5905X1693") setView("admin");
+            else if (pwd !== null) window.alert("密碼錯誤！");
+          }} style={{ ...BTN_GHOST, fontSize:12, padding:"6px 12px" }}>後台 →</button>
         </div>
       </div>
 
