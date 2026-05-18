@@ -275,17 +275,22 @@ table{width:100%;border-collapse:collapse}
   a.click();
 }
 
-// ─── Google Sheets 送出 ───────────────────────────────────────
-async function sendToSheets(rec) {
+// ─── Google Sheets 送出（JSONP 方式）───────────────────────────────────────
+function sendToSheets(rec) {
   if (!GOOGLE_SHEET_URL) return;
-  try {
-    const formData = new FormData();
-    formData.append("data", JSON.stringify(rec));
-    await fetch(GOOGLE_SHEET_URL, {
-      method: "POST",
-      body: formData,
-    });
-  } catch (e) { console.warn("Sheets 送出失敗", e); }
+  const cbName = "gsSend_" + Date.now();
+  const script = document.createElement("script");
+  const payload = encodeURIComponent(JSON.stringify(rec));
+  window[cbName] = function() {
+    delete window[cbName];
+    if (script.parentNode) script.parentNode.removeChild(script);
+  };
+  script.src = GOOGLE_SHEET_URL + "?action=write&data=" + payload + "&callback=" + cbName;
+  script.onerror = function() {
+    delete window[cbName];
+    if (script.parentNode) script.parentNode.removeChild(script);
+  };
+  document.body.appendChild(script);
 }
 
 // ─── 主元件 ───────────────────────────────────────────────────
@@ -389,7 +394,7 @@ export default function App() {
     (product==="panel" ? subForm.width && subForm.height : true) &&
     (product==="body" ? subForm.brand && subForm.tempType : true);
 
-  async function handleSubmit() {
+  function handleSubmit() {
     const rec = {
       id: genId(),
       createdAt: new Date().toISOString(),
@@ -400,7 +405,7 @@ export default function App() {
       adminNote: "",
       quotedAmount: "",
     };
-    await sendToSheets(rec);
+    sendToSheets(rec);
     setSubmitted(rec);
     setView("done");
   }
