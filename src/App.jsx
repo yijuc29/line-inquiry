@@ -279,16 +279,11 @@ table{width:100%;border-collapse:collapse}
 async function sendToSheets(rec) {
   if (!GOOGLE_SHEET_URL) return;
   try {
-    const rows = buildPdfRows(rec);
-    const payload = Object.fromEntries(rows);
-    payload._status = rec.status || "pending";
-    payload._id = rec.id;
-    payload._createdAt = rec.createdAt;
+    const formData = new FormData();
+    formData.append("data", JSON.stringify(rec));
     await fetch(GOOGLE_SHEET_URL, {
       method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: formData,
     });
   } catch (e) { console.warn("Sheets 送出失敗", e); }
 }
