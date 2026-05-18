@@ -311,60 +311,67 @@ export default function App() {
 
   function showToast(msg) { setToast(msg); setTimeout(()=>setToast(null), 2500); }
 
-  // 從 Google Sheets 讀取資料
-  async function fetchRecs() {
+  // 從 Google Sheets 讀取資料（JSONP 方式避免 CORS 問題）
+  function fetchRecs() {
     setLoading(true);
-    try {
-      const res = await fetch(GOOGLE_SHEET_URL);
-      const data = await res.json();
+    const cbName = "gsCallback_" + Date.now();
+    const script = document.createElement("script");
+    window[cbName] = function(data) {
       if (data.ok && data.records) {
-        const mapped = data.records.map(r => ({
-          id: r["詢價編號"] || "",
-          createdAt: r["建立時間"] || "",
-          status: statusFromLabel(r["狀態"]),
-          adminNote: r["內部備註"] || "",
-          quotedAmount: r["報價金額"] || "",
-          base: {
-            date: r["填單日期"] || "",
-            company: r["公司名稱"] || "",
-            contact: r["聯絡人"] || "",
-            phone: r["電話/手機"] || "",
-            taxId: r["統一編號"] || "",
-            address: r["地址"] || "",
-          },
-          product: productIdFromLabel(r["詢價產品"]),
-          subForm: {
-            brand: r["品牌"] || "",
-            ton: r["噸數"] || "",
-            feet: r["呎數"] || "",
-            type: r["類型"] || "",
-            cargo: r["載運貨物"] || "",
-            refrigerant: r["冷媒"] || "",
-            width: r["車廂內寬cm"] || "",
-            height: r["車廂內高cm"] || "",
-            top: r["饅頭"] || "",
-            qty: r["數量"] || "",
-            chassis: r["底盤型式"] || "",
-            tempType: r["溫度需求"] || "",
-            thickness: r["車廂厚度"] || "",
-            freezerType: r["冷凍機"] || "",
-            outerPanel: r["外板"] || "",
-            innerPanel: r["內板"] || "",
-            floorPanel: r["內底板"] || "",
-            specialSpec: r["特殊規格"] || "",
-            doorDriver: r["駕駛邊門"] || "",
-            doorPassenger: r["副駕邊門"] || "",
-            doorRear: r["後門"] || "",
-            railing: r["護欄"] || "",
-            accessories: r["其他配件"] || "",
-            desc: r["故障說明"] || r["詢問內容"] || "",
-            note: r["其他說明"] || "",
-          },
-        }));
+        const mapped = data.records
+          .filter(r => r["詢價編號"])
+          .map(r => ({
+            id: r["詢價編號"] || "",
+            createdAt: r["建立時間"] || "",
+            status: statusFromLabel(r["狀態"]),
+            adminNote: r["內部備註"] || "",
+            quotedAmount: r["報價金額"] || "",
+            base: {
+              date: r["填單日期"] || "",
+              company: r["公司名稱"] || "",
+              contact: r["聯絡人"] || "",
+              phone: r["電話/手機"] || "",
+              taxId: r["統一編號"] || "",
+              address: r["地址"] || "",
+            },
+            product: productIdFromLabel(r["詢價產品"]),
+            subForm: {
+              brand: r["品牌"] || "",
+              ton: r["噸數"] || "",
+              feet: r["呎數"] || "",
+              type: r["類型"] || "",
+              cargo: r["載運貨物"] || "",
+              refrigerant: r["冷媒"] || "",
+              width: r["車廂內寬cm"] || "",
+              height: r["車廂內高cm"] || "",
+              top: r["饅頭"] || "",
+              qty: r["數量"] || "",
+              chassis: r["底盤型式"] || "",
+              tempType: r["溫度需求"] || "",
+              thickness: r["車廂厚度"] || "",
+              freezerType: r["冷凍機"] || "",
+              outerPanel: r["外板"] || "",
+              innerPanel: r["內板"] || "",
+              floorPanel: r["內底板"] || "",
+              specialSpec: r["特殊規格"] || "",
+              doorDriver: r["駕駛邊門"] || "",
+              doorPassenger: r["副駕邊門"] || "",
+              doorRear: r["後門"] || "",
+              railing: r["護欄"] || "",
+              accessories: r["其他配件"] || "",
+              desc: r["故障說明"] || r["詢問內容"] || "",
+              note: r["其他說明"] || "",
+            },
+          }));
         setRecs(mapped);
       }
-    } catch(e) { showToast("讀取失敗，請檢查網路"); }
-    setLoading(false);
+      setLoading(false);
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+    };
+    script.onerror = function() { showToast("讀取失敗，請重試"); setLoading(false); };
+    script.src = GOOGLE_SHEET_URL + "?callback=" + cbName;
+    document.body.appendChild(script);
   }
 
   function statusFromLabel(label) {
