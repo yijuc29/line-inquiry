@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import * as XLSX from "https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs";
 
-// ─── 設定區：Google Sheets 串接（設定好後填入） ────────────────
-const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbxYhlllyNApKSUATQOSoEiB_B2yk-ueWiItmgcIsY9nVHUciydc8oMPKRFiHJ3st9aOFQ/exec"; // 填入你的 Google Apps Script Web App URL
+// ─── 設定區 ────────────────────────────────────────────────────
+const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbxYhlllyNApKSUATQOSoEiB_B2yk-ueWiItmgcIsY9nVHUciydc8oMPKRFiHJ3st9aOFQ/exec";
 
 // ─── 常數 ────────────────────────────────────────────────────
 const STORE_KEY = "yiju_inquiries_v2";
@@ -295,23 +295,90 @@ async function sendToSheets(rec) {
 
 // ─── 主元件 ───────────────────────────────────────────────────
 export default function App() {
-  const [view, setView]         = useState("list"); // list | form | admin
+  const [view, setView]         = useState("list");
   const [base, setBase]         = useState({ date: new Date().toISOString().slice(0,10), company:"", contact:"", phone:"", taxId:"", address:"", card:null });
   const [product, setProduct]   = useState("");
   const [subForm, setSubForm]   = useState({});
-  const [submitted, setSubmitted] = useState(null); // 送出後的 rec
-  const [adminTab, setAdminTab]   = useState("list");
+  const [submitted, setSubmitted] = useState(null);
   const [search, setSearch]       = useState("");
   const [filterStatus, setFilter] = useState("all");
   const [selected, setSelected]   = useState(null);
   const [adminNote, setAdminNote] = useState("");
   const [quotedAmt, setQuotedAmt] = useState("");
   const [toast, setToast]         = useState(null);
-  const [recs, setRecs]           = useState(loadRecords());
+  const [recs, setRecs]           = useState([]);
+  const [loading, setLoading]     = useState(false);
 
   function showToast(msg) { setToast(msg); setTimeout(()=>setToast(null), 2500); }
 
-  function saveAndRefresh(newRecs) { saveRecords(newRecs); setRecs([...newRecs]); }
+  // 從 Google Sheets 讀取資料
+  async function fetchRecs() {
+    setLoading(true);
+    try {
+      const res = await fetch(GOOGLE_SHEET_URL);
+      const data = await res.json();
+      if (data.ok && data.records) {
+        const mapped = data.records.map(r => ({
+          id: r["詢價編號"] || "",
+          createdAt: r["建立時間"] || "",
+          status: statusFromLabel(r["狀態"]),
+          adminNote: r["內部備註"] || "",
+          quotedAmount: r["報價金額"] || "",
+          base: {
+            date: r["填單日期"] || "",
+            company: r["公司名稱"] || "",
+            contact: r["聯絡人"] || "",
+            phone: r["電話/手機"] || "",
+            taxId: r["統一編號"] || "",
+            address: r["地址"] || "",
+          },
+          product: productIdFromLabel(r["詢價產品"]),
+          subForm: {
+            brand: r["品牌"] || "",
+            ton: r["噸數"] || "",
+            feet: r["呎數"] || "",
+            type: r["類型"] || "",
+            cargo: r["載運貨物"] || "",
+            refrigerant: r["冷媒"] || "",
+            width: r["車廂內寬cm"] || "",
+            height: r["車廂內高cm"] || "",
+            top: r["饅頭"] || "",
+            qty: r["數量"] || "",
+            chassis: r["底盤型式"] || "",
+            tempType: r["溫度需求"] || "",
+            thickness: r["車廂厚度"] || "",
+            freezerType: r["冷凍機"] || "",
+            outerPanel: r["外板"] || "",
+            innerPanel: r["內板"] || "",
+            floorPanel: r["內底板"] || "",
+            specialSpec: r["特殊規格"] || "",
+            doorDriver: r["駕駛邊門"] || "",
+            doorPassenger: r["副駕邊門"] || "",
+            doorRear: r["後門"] || "",
+            railing: r["護欄"] || "",
+            accessories: r["其他配件"] || "",
+            desc: r["故障說明"] || r["詢問內容"] || "",
+            note: r["其他說明"] || "",
+          },
+        }));
+        setRecs(mapped);
+      }
+    } catch(e) { showToast("讀取失敗，請檢查網路"); }
+    setLoading(false);
+  }
+
+  function statusFromLabel(label) {
+    const map = {"待報價":"pending","已報價":"quoted","已成交":"deal","取消":"cancel"};
+    return map[label] || "pending";
+  }
+  function productIdFromLabel(label) {
+    const map = {"冷凍機":"freezer","保溫車廂":"body","冷凍隔板":"panel","維修":"repair","其他":"other"};
+    return map[label] || "other";
+  }
+
+  useEffect(() => { if (view === "admin") fetchRecs(); }, [view]);
+
+  function saveAndRefresh(newRecs) { setRecs([...newRecs]); }
 
   const canSubmit = base.company && base.contact && base.phone && product &&
     (product==="other" ? subForm.desc : true) &&
@@ -331,37 +398,41 @@ export default function App() {
       adminNote: "",
       quotedAmount: "",
     };
-    const updated = [...loadRecords(), rec];
-    saveAndRefresh(updated);
     await sendToSheets(rec);
     setSubmitted(rec);
     setView("done");
   }
 
-  function handleAdminSave() {
+  async function handleAdminSave() {
     if (!selected) return;
-    const updated = recs.map(r => r.id === selected.id
-      ? { ...r, adminNote, quotedAmount: quotedAmt }
-      : r
-    );
-    saveAndRefresh(updated);
-    setSelected({ ...selected, adminNote, quotedAmount: quotedAmt });
-    showToast("已儲存備註");
+    try {
+      await fetch(GOOGLE_SHEET_URL, {
+        method: "POST", mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ _action:"update", _id: selected.id, _amount: quotedAmt, _note: adminNote }),
+      });
+      setSelected({ ...selected, adminNote, quotedAmount: quotedAmt });
+      showToast("已儲存");
+      fetchRecs();
+    } catch(e) { showToast("儲存失敗"); }
   }
 
-  function handleStatusChange(id, status) {
-    const updated = recs.map(r => r.id === id ? { ...r, status } : r);
-    saveAndRefresh(updated);
-    if (selected?.id === id) setSelected({ ...selected, status });
-    showToast("狀態已更新");
+  async function handleStatusChange(id, status) {
+    const labelMap = {pending:"待報價", quoted:"已報價", deal:"已成交", cancel:"取消"};
+    try {
+      await fetch(GOOGLE_SHEET_URL, {
+        method: "POST", mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ _action:"update", _id: id, _status: labelMap[status] }),
+      });
+      if (selected?.id === id) setSelected({ ...selected, status });
+      showToast("狀態已更新");
+      fetchRecs();
+    } catch(e) { showToast("更新失敗"); }
   }
 
   function handleDelete(id) {
-    if (!window.confirm("確定刪除此筆詢價單？")) return;
-    const updated = recs.filter(r => r.id !== id);
-    saveAndRefresh(updated);
-    if (selected?.id === id) setSelected(null);
-    showToast("已刪除");
+    showToast("請直接在 Google Sheets 刪除該列");
   }
 
   function exportAllExcel() {
@@ -434,11 +505,15 @@ export default function App() {
           <div style={{ ...W, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
             <button onClick={()=>setView("form")} style={{ ...BTN_GHOST, padding:"6px 12px" }}>← 返回</button>
             <span style={{ fontSize:15, fontWeight:700 }}>後台管理</span>
-            <button onClick={exportAllExcel} style={{ ...BTN_GHOST, padding:"6px 12px", color:C.blue }}>匯出 Excel</button>
+            <div style={{ display:"flex", gap:6 }}>
+              <button onClick={fetchRecs} style={{ ...BTN_GHOST, padding:"6px 12px" }}>↻</button>
+              <button onClick={exportAllExcel} style={{ ...BTN_GHOST, padding:"6px 12px", color:C.blue }}>Excel</button>
+            </div>
           </div>
         </div>
 
         <div style={{ ...W, padding:"12px 16px" }}>
+          {loading && <div style={{ textAlign:"center", padding:"30px 0", color:C.muted, fontSize:14 }}>載入中...</div>}
           {/* 搜尋 + 篩選 */}
           <div style={{ display:"flex", gap:8, marginBottom:12 }}>
             <input value={search} onChange={e=>setSearch(e.target.value)}
