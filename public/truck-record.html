@@ -219,6 +219,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang TC','Noto Sans TC',s
   </div>
 
   <div class="sec">7 — 車廂實作完成尺寸</div>
+  <div class="f"><label>完成車全長 (mm)</label><input type="number" id="car_total_length" placeholder="完成車全長"></div>
   <div class="sub">外尺寸 / 內尺寸</div>
   <div class="g2">
     <div class="f"><label>外 — 全長 (mm)</label><input type="number" id="act_ol" placeholder="長"></div>
@@ -498,7 +499,7 @@ var FIELDS=['order_no','date_work','car_type','ton','date_in','chassis','engine_
   'pre_ol','pre_il','pre_ow','pre_iw','pre_oh','pre_ih','pre_ground','panel_mat',
   'axle_dist','axle_far','wheel_f','wheel_r',
   'ref_model','ref_unit_no','ref_cond','ref_evap','ref_date','ref_eng_m','ref_eng_s',
-  'act_ol','act_il','act_ow','act_iw','act_oh','act_ih','act_ground','rear_oh',
+  'act_ol','act_il','act_ow','act_iw','act_oh','act_ih','act_ground','rear_oh','car_total_length',
   'w_empty','w_front','w_rear','spare',
   'ref9','ref12','ref13_top','ref13_h','ref14','ref15',
   'lamp_vendor','date_inspect','date_080','date_submit','date_cert','cert_type','note'];
@@ -646,6 +647,7 @@ function buildRows(d){
     ['實作外尺寸 全長(mm)','act_ol'],['實作外尺寸 全寬(mm)','act_ow'],['實作外尺寸 全高(mm)','act_oh'],
     ['實作內尺寸 長(mm)','act_il'],['實作內尺寸 寬(mm)','act_iw'],['實作內尺寸 高(mm)','act_ih'],
     ['實際距地高(mm)','act_ground'],['後懸(mm)','rear_oh'],
+    ['完成車全長(mm)','car_total_length'],
     ['車輛空重(kg)','w_empty'],['前軸重(kg)','w_front'],['後軸重(kg)','w_rear'],['備胎數量/規格','spare'],
     ['第9項 距各末端(mm)','ref9'],['第12項 下緣距地高(mm)','ref12'],
     ['第13項 上緣距地高(mm)','ref13_top'],['第13項 距地高(mm)','ref13_h'],
