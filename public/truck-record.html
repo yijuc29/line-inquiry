@@ -453,16 +453,55 @@ function renderList(){
     el.innerHTML='<div class="empty-state"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><p>找不到「'+kw+'」<br>試試其他關鍵字</p></div>';
     return;
   }
-  el.innerHTML=filtered.slice().reverse().map(function(r){
-    return'<div class="rec-card" onclick="openRecord(\''+r.id+'\')">'
-      +'<div class="rec-card-top"><div><div class="rec-order">'+(r.order_no||'（未填訂單編號）')+'</div><div class="rec-meta">'+(r.car_type||'')+(r.ton?' · '+r.ton:'')+'</div></div><div class="rec-date">'+(r.date_work||r._saved||'')+'</div></div>'
+
+  // 按日期排序（新到舊）
+  function sortByDate(arr){
+    return arr.slice().sort(function(a,b){
+      var da=a.date_work||a._saved||'';
+      var db=b.date_work||b._saved||'';
+      return db.localeCompare(da);
+    });
+  }
+
+  var done=sortByDate(filtered.filter(function(r){return r._done}));
+  var undone=sortByDate(filtered.filter(function(r){return !r._done}));
+
+  function makeCard(r){
+    var doneBtn=r._done
+      ?'<button class="rec-act-btn" style="color:var(--red)" onclick="event.stopPropagation();toggleDone(\''+r.id+'\')">標為未完成</button>'
+      :'<button class="rec-act-btn" style="color:#27500a" onclick="event.stopPropagation();toggleDone(\''+r.id+'\')">標為已完成</button>';
+    var badge=r._done
+      ?'<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#eaf3de;color:#27500a;font-weight:500">已完成</span>'
+      :'<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#fff3cd;color:#856404;font-weight:500">進行中</span>';
+    return '<div class="rec-card" onclick="openRecord(\''+r.id+'\')">'
+      +'<div class="rec-card-top"><div><div class="rec-order" style="display:flex;align-items:center;gap:6px">'+(r.order_no||'（未填訂單編號）')+' '+badge+'</div>'
+      +'<div class="rec-meta">'+(r.car_type||'')+(r.ton?' · '+r.ton:'')+'</div></div>'
+      +'<div class="rec-date">'+(r.date_work||r._saved||'')+'</div></div>'
       +'<div class="rec-actions">'
       +'<button class="rec-act-btn" onclick="event.stopPropagation();openRecord(\''+r.id+'\')">繼續填寫</button>'
+      +doneBtn
       +'<button class="rec-act-btn" onclick="event.stopPropagation();exportRecordPDF(\''+r.id+'\')">PDF</button>'
-      +'<button class="rec-act-btn" onclick="event.stopPropagation();exportRecordExcel(\''+r.id+'\')">Excel</button>'
       +'<button class="rec-act-btn danger" onclick="event.stopPropagation();confirmDeleteId(\''+r.id+'\')">刪除</button>'
       +'</div></div>';
-  }).join('');
+  }
+
+  var html='';
+  if(undone.length){
+    html+='<div style="font-size:11px;font-weight:500;color:var(--text3);letter-spacing:.08em;margin-bottom:8px;margin-top:4px">進行中 ('+undone.length+')</div>';
+    html+=undone.map(makeCard).join('');
+  }
+  if(done.length){
+    html+='<div style="font-size:11px;font-weight:500;color:var(--text3);letter-spacing:.08em;margin-bottom:8px;margin-top:'+(undone.length?'16px':'4px')+'">已完成 ('+done.length+')</div>';
+    html+=done.map(makeCard).join('');
+  }
+  el.innerHTML=html;
+}
+
+function toggleDone(id){
+  var recs=loadRecords();
+  var idx=recs.findIndex(function(r){return r.id===id});
+  if(idx>=0){recs[idx]._done=!recs[idx]._done;saveRecords(recs);}
+  renderList();
 }
 
 // ── FORM ──
