@@ -126,7 +126,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang TC','Noto Sans TC',s
 <div class="page active" id="page-list">
   <div class="page-hdr">
     <h1>車廂實作紀錄</h1>
-    <span id="rec-count-badge" style="font-size:13px;color:var(--text3)"></span>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span id="rec-count-badge" style="font-size:13px;color:var(--text3)"></span>
+      <button onclick="fetchFromSheets()" style="border:none;background:none;font-size:12px;color:var(--text3);cursor:pointer;padding:4px 8px;border-radius:var(--radius)">↓ 雲端同步</button>
+    </div>
   </div>
   <div style="margin-bottom:.75rem;position:relative">
     <input type="search" id="search-input" placeholder="搜尋訂單編號、車型、車身號碼..." oninput="renderList()" style="width:100%;border:.5px solid var(--border);border-radius:var(--radius);padding:9px 11px 9px 36px;font-size:14px;background:var(--bg);color:var(--text);outline:none;appearance:none;-webkit-appearance:none">
@@ -383,6 +386,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang TC','Noto Sans TC',s
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 var STORE_KEY='yiju_records';
+var SHEETS_URL='https://script.google.com/macros/s/AKfycbxYhlllyNApKSUATQOSoEiB_B2yk-ueWiItmgcIsY9nVHUciydc8oMPKRFiHJ3st9aOFQ/exec';
 var currentId=null;
 var currentSlot=0;
 var slotLabels=['前視','後視','左視','右視'];
@@ -395,6 +399,54 @@ function loadRecords(){
 }
 function saveRecords(recs){
   try{localStorage.setItem(STORE_KEY,JSON.stringify(recs));}catch(e){showToast('儲存空間不足，請先匯出備份');}
+}
+
+// ── SHEETS 同步 ──
+function syncToSheets(rec){
+  var cbName='truckSync_'+Date.now();
+  var script=document.createElement('script');
+  var payload=encodeURIComponent(JSON.stringify(rec));
+  window[cbName]=function(){delete window[cbName];if(script.parentNode)script.parentNode.removeChild(script);};
+  script.onerror=function(){delete window[cbName];if(script.parentNode)script.parentNode.removeChild(script);};
+  script.src=SHEETS_URL+'?action=truck_write&data='+payload+'&callback='+cbName;
+  document.body.appendChild(script);
+}
+
+function fetchFromSheets(){
+  showToast('從雲端同步中...');
+  var cbName='truckFetch_'+Date.now();
+  var script=document.createElement('script');
+  window[cbName]=function(data){
+    delete window[cbName];
+    if(script.parentNode)script.parentNode.removeChild(script);
+    if(data.ok&&data.records&&data.records.length){
+      mergeFromSheets(data.records);
+      showToast('同步完成！共 '+data.records.length+' 筆');
+    } else {
+      showToast('雲端目前無資料');
+    }
+  };
+  script.onerror=function(){delete window[cbName];if(script.parentNode)script.parentNode.removeChild(script);showToast('同步失敗，請重試');};
+  script.src=SHEETS_URL+'?action=truck_read&callback='+cbName;
+  document.body.appendChild(script);
+}
+
+function mergeFromSheets(sheetsRecs){
+  var local=loadRecords();
+  var localIds={};
+  local.forEach(function(r){localIds[r.id]=true;});
+  sheetsRecs.forEach(function(sr){
+    var id=sr['紀錄ID'];
+    if(!id||localIds[id])return;
+    local.push({
+      id:id, order_no:sr['訂單編號']||'', date_work:sr['施作日']||'',
+      car_type:sr['車型']||'', ton:sr['噸數']||'', date_in:sr['入廠日']||'',
+      chassis:sr['底盤型式']||'', engine_no:sr['引擎號碼']||'', vin:sr['車身號碼']||'',
+      _done:sr['狀態']==='已完成', _saved:sr['建立時間']||'', note:sr['備註']||''
+    });
+  });
+  saveRecords(local);
+  renderList();
 }
 function getStorageKB(){
   var s=localStorage.getItem(STORE_KEY)||'';
@@ -617,8 +669,9 @@ function saveRecord(){
   currentId=d.id;
   document.getElementById('form-title').textContent='編輯紀錄';
   document.getElementById('delete-btn').style.display='flex';
-  showToast('已儲存');
+  showToast('已儲存並同步雲端');
   updateStorageUI();
+  syncToSheets(d);
 }
 
 // ── PHOTOS ──
