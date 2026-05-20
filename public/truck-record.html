@@ -255,8 +255,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang TC','Noto Sans TC',s
   <div class="f"><label>下方反光標識 — 下緣距地高 (mm)</label><input type="number" id="ref12" placeholder="下緣距地高"></div>
 
   <div class="sec">11 — 反光標識位置（第13項）</div>
-  <div class="f"><label>上方反光標識 — 上緣距地高 (mm)</label><input type="number" id="ref13_top" placeholder="上緣距地高"></div>
-  <div class="f"><label>距地高 (mm)</label><input type="number" id="ref13_h" placeholder="距地高"></div>
+  <div class="f"><label>下方反光標識 — 上緣距地高 (mm)</label><input type="number" id="ref13_top" placeholder="上緣距地高"></div>
 
   <div class="sec">12 — 上方輪廓反光標識（第14項）</div>
   <div class="f"><label>距車頂距離 (mm)</label><input type="number" id="ref14" placeholder="距車頂"></div>
@@ -501,7 +500,7 @@ var FIELDS=['order_no','date_work','car_type','ton','date_in','chassis','engine_
   'ref_model','ref_unit_no','ref_cond','ref_evap','ref_date','ref_eng_m','ref_eng_s',
   'act_ol','act_il','act_ow','act_iw','act_oh','act_ih','act_ground','rear_oh','car_total_length',
   'w_empty','w_front','w_rear','spare',
-  'ref9','ref12','ref13_top','ref13_h','ref14','ref15',
+  'ref9','ref12','ref13_top','ref14','ref15',
   'lamp_vendor','date_inspect','date_080','date_submit','date_cert','cert_type','note'];
 
 var PHOTO_FIELDS=['th_in','th_report','th_chassis','th_misc','th_cert'];
@@ -650,7 +649,7 @@ function buildRows(d){
     ['完成車全長(mm)','car_total_length'],
     ['車輛空重(kg)','w_empty'],['前軸重(kg)','w_front'],['後軸重(kg)','w_rear'],['備胎數量/規格','spare'],
     ['第9項 距各末端(mm)','ref9'],['第12項 下緣距地高(mm)','ref12'],
-    ['第13項 上緣距地高(mm)','ref13_top'],['第13項 距地高(mm)','ref13_h'],
+    ['第13項 上緣距地高(mm)','ref13_top'],
     ['第14項 距車頂(mm)','ref14'],['第15項 距煞車燈(mm)','ref15'],
     ['燈具廠商名稱','lamp_vendor'],
     ['檢測日期','date_inspect'],['080檢測日期','date_080'],['送交通部日期','date_submit'],
