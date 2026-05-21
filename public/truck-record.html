@@ -528,7 +528,7 @@ function renderList(){
     return '<div class="rec-card" onclick="openRecord(\''+r.id+'\')">'
       +'<div class="rec-card-top"><div><div class="rec-order" style="display:flex;align-items:center;gap:6px">'+(r.order_no||'（未填訂單編號）')+' '+badge+'</div>'
       +'<div class="rec-meta">'+(r.car_type||'')+(r.ton?' · '+r.ton:'')+'</div></div>'
-      +'<div class="rec-date">'+(r.date_work||r._saved||'')+'</div></div>'
+      +'<div class="rec-date">'+formatDate(r.date_work||r._saved||'')+'</div></div>'
       +'<div class="rec-actions">'
       +'<button class="rec-act-btn" onclick="event.stopPropagation();openRecord(\''+r.id+'\')">繼續填寫</button>'
       +doneBtn
@@ -547,6 +547,15 @@ function renderList(){
     html+=done.map(makeCard).join('');
   }
   el.innerHTML=html;
+}
+
+function formatDate(s){
+  if(!s)return'';
+  try{
+    var d=new Date(s);
+    if(isNaN(d.getTime()))return s;
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }catch(e){return s;}
 }
 
 function toggleDone(id){
