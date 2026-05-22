@@ -677,7 +677,7 @@ function genPDF(d){
     +terms
     +'<div style="display:flex;justify-content:space-around;margin-top:24px;font-size:13px">'
     +'<div style="text-align:center">客戶簽名<div style="margin-top:30px;border-top:1px solid #999;width:150px"></div></div>'
-    +'<div style="text-align:center">公司簽名<div style="margin-top:30px;border-top:1px solid #999;width:150px"></div></div>'
+    +'<div style="text-align:center">公司簽名<br><img src="https://line-inquiry.vercel.app/stamp-'+d.company+'.png" style="height:80px;object-fit:contain;margin-top:4px" onerror="this.style.display=\'none\'"><div style="border-top:1px solid #999;width:150px"></div></div>'
     +'</div><br>'
     +'<button class="np" onclick="window.print()" style="padding:8px 20px;font-size:14px;cursor:pointer">列印 / 儲存 PDF</button>'
     +'</body></html>';
