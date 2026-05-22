@@ -597,7 +597,7 @@ function genPDF(d){
       +'</table>';
   }
 
-  var terms='<div style="font-size:10px;color:#333;line-height:1.7;margin-top:8px">'
+  var terms='<div style="font-size:10px;color:#333;line-height:1.7;margin-top:8px;border-top:1px solid #ccc;padding-top:8px">'
     +'・本報價單有效期限為14天。<br>'
     +'・雙方依訂購單所定尺寸、施工內容確認無誤後進行施作，如有變更標準配備材質、規格及尺寸，須依實際狀況補差額；特殊規格價格另計。價格計算會依實際狀況做調整。產品定製以訂購單為依據，訂購單經確認後務必蓋章回傳使有效。<br>'
     +'・放車前請務必先聯絡廠內，否則拒收；本公司僅提供場地放車並不負任何保管責任。<br>'
@@ -615,7 +615,10 @@ function genPDF(d){
     +(co.bank?'・'+co.bank+'<br>':'')
     +'</div>';
 
-  var logoHtml='<img src="'+co.logo+'" style="height:48px;object-fit:contain" onerror="this.style.display=\'none\'">';
+  var logoHtml='<div style="display:flex;align-items:center;gap:12px">'
+    +'<img src="'+co.logo+'" style="height:50px;object-fit:contain" onerror="this.style.display=\'none\'">'
+    +'<div style="font-size:15px;font-weight:700;color:#222">'+co.name+'</div>'
+    +'</div>';
 
   var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+title+'</title>'
     +'<style>body{font-family:"PingFang TC","Noto Sans TC",serif;padding:20px;color:#222;max-width:800px;margin:auto}'
