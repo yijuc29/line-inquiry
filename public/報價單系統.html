@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>報價單系統</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang TC",sans-serif;background:#f5f4f1;color:#1a1a1a;min-height:100vh;padding-bottom:80px}
+.topbar{background:#fff;border-bottom:1px solid #d0cec8;display:flex;position:sticky;top:0;z-index:50}
+.topbar button{flex:1;padding:13px 4px;border:none;background:none;font-size:13px;color:#6b6b6b;cursor:pointer;border-bottom:2px solid transparent}
+.topbar button.on{color:#1a1a1a;font-weight:600;border-bottom-color:#1a1a1a}
+.wrap{max-width:480px;margin:0 auto;padding:12px 14px}
+.co-bar{display:flex;gap:8px;margin-bottom:12px;background:#fff;border-radius:8px;padding:5px;border:1px solid #d0cec8}
+.co-btn{flex:1;padding:8px;border-radius:6px;border:none;font-size:13px;font-weight:500;cursor:pointer;background:transparent;color:#6b6b6b}
+.co-btn.on{background:#1a1a1a;color:#fff}
+.type-bar{display:flex;gap:8px;margin-bottom:14px}
+.type-btn{flex:1;padding:10px;border-radius:8px;border:1px solid #d0cec8;font-size:13px;font-weight:500;cursor:pointer;background:#fff;color:#6b6b6b}
+.type-btn.on{border-color:#1a56db;background:#eff4ff;color:#1a56db}
+.sec{font-size:11px;font-weight:600;color:#9b9b9b;letter-spacing:.1em;text-transform:uppercase;margin:14px 0 8px;padding-bottom:4px;border-bottom:1px solid #d0cec8}
+.f{margin-bottom:10px}
+.f label{display:block;font-size:12px;color:#6b6b6b;margin-bottom:3px}
+.f input,.f textarea{width:100%;border:1px solid #d0cec8;border-radius:8px;padding:9px 11px;font-size:14px;background:#fff;color:#1a1a1a;outline:none;-webkit-appearance:none}
+.f textarea{resize:vertical;min-height:56px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px}
+.chk-wrap{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.chk-item{display:flex;align-items:center;gap:6px;font-size:13px;padding:7px 10px;background:#fff;border:1px solid #d0cec8;border-radius:6px;cursor:pointer}
+.chk-item input{width:15px;height:15px}
+.items-tbl{width:100%;border-collapse:collapse;background:#fff;border:1px solid #d0cec8;border-radius:8px;overflow:hidden;margin-bottom:8px}
+.items-tbl th{background:#f0f0f0;padding:6px 5px;font-size:11px;font-weight:600;color:#555;text-align:left;border-bottom:1px solid #d0cec8}
+.items-tbl td{padding:3px;border-bottom:1px solid #eee}
+.items-tbl td input{border:none;outline:none;background:transparent;font-size:13px;width:100%;padding:5px 3px}
+.add-btn{width:100%;padding:9px;border:1px dashed #d0cec8;border-radius:8px;background:#fff;color:#6b6b6b;font-size:13px;cursor:pointer;margin-bottom:10px}
+.price-tbl{width:100%;border-collapse:collapse;background:#fff;border:1px solid #d0cec8;border-radius:8px;overflow:hidden;margin-bottom:10px}
+.price-tbl td{padding:9px 11px;font-size:13px;border-bottom:1px solid #eee}
+.price-tbl td:first-child{color:#6b6b6b;width:42%}
+.price-tbl input{border:none;outline:none;background:transparent;font-size:13px;width:100%;text-align:right}
+.price-tbl .tot td{font-weight:700;background:#f5f4f1}
+.btmbar{background:#fff;border-top:1px solid #d0cec8;padding:10px 14px;position:sticky;bottom:0}
+.btmbar-inner{display:flex;gap:8px;max-width:480px;margin:0 auto}
+.btn{flex:1;padding:11px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;border:1px solid #d0cec8;background:#fff;color:#1a1a1a}
+.btn-save{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.btn-pdf{border-color:#b5d4f4;color:#0c447c;background:#e6f1fb}
+.btn-clr{border-color:#f09595;color:#a32d2d;background:#fef2f2}
+.status-bar{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px}
+.status-btn{padding:6px 12px;border-radius:20px;border:1px solid #d0cec8;background:#fff;font-size:12px;cursor:pointer;white-space:nowrap;color:#6b6b6b}
+.status-btn.on{font-weight:600}
+.rec-card{background:#fff;border:1px solid #d0cec8;border-radius:8px;padding:14px;margin-bottom:8px}
+.rec-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.rec-act{flex:1;padding:7px;border:1px solid #d0cec8;border-radius:6px;background:none;font-size:12px;cursor:pointer;min-width:60px}
+.status-tag{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600}
+.grp-title{font-size:11px;font-weight:600;color:#9b9b9b;letter-spacing:.08em;margin-bottom:8px;margin-top:4px}
+.toast{position:fixed;bottom:85px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);color:#fff;padding:8px 18px;border-radius:20px;font-size:13px;z-index:999;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
+.hidden{display:none}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button class="on" id="tab-form" onclick="goTab('form')">填寫表單</button>
+  <button id="tab-records" onclick="goTab('records')">歷史紀錄</button>
+</div>
+
+<!-- 表單頁 -->
+<div id="page-form">
+<div class="wrap">
+  <div class="co-bar">
+    <button class="co-btn on" id="co-junjia" onclick="setCo('junjia')">駿家企業</button>
+    <button class="co-btn" id="co-smm" onclick="setCo('smm')">smm勝盟</button>
+  </div>
+  <div class="type-bar">
+    <button class="type-btn on" id="tp-quote" onclick="setType('quote')">報價單</button>
+    <button class="type-btn" id="tp-order" onclick="setType('order')">車廂訂購單</button>
+  </div>
+
+  <div class="sec">基本資料</div>
+  <div class="g2">
+    <div class="f"><label>單號</label><input type="text" id="doc_no" placeholder="單號"></div>
+    <div class="f"><label>日期</label><input type="date" id="doc_date"></div>
+  </div>
+  <div class="g2">
+    <div class="f"><label>客戶</label><input type="text" id="customer" placeholder="客戶名稱"></div>
+    <div class="f"><label>聯絡人</label><input type="text" id="contact" placeholder="聯絡人"></div>
+  </div>
+  <div class="g2">
+    <div class="f"><label>統編</label><input type="text" id="tax_id" placeholder="統一編號"></div>
+    <div class="f"><label>電話</label><input type="tel" id="phone" placeholder="電話"></div>
+  </div>
+  <div class="g2">
+    <div class="f"><label>手機</label><input type="tel" id="mobile" placeholder="手機"></div>
+    <div class="f"><label>地址</label><input type="text" id="address" placeholder="地址"></div>
+  </div>
+  <div class="g2">
+    <div class="f"><label>車種/數量</label><input type="text" id="car_type" placeholder="車種/數量"></div>
+    <div class="f"><label>底盤型式</label><input type="text" id="chassis" placeholder="底盤型式"></div>
+  </div>
+  <div class="g2">
+    <div class="f"><label>引擎號碼</label><input type="text" id="engine_no" placeholder="引擎號碼"></div>
+    <div class="f"><label>車身號碼</label><input type="text" id="vin" placeholder="車身號碼"></div>
+  </div>
+  <div class="g4">
+    <div class="f"><label>車廂厚度</label><input type="text" id="thickness" placeholder="厚度"></div>
+    <div class="f"><label>外尺寸</label><input type="text" id="out_size" placeholder="外尺寸"></div>
+    <div class="f"><label>內尺寸</label><input type="text" id="in_size" placeholder="內尺寸"></div>
+    <div class="f"><label>距地高</label><input type="text" id="ground_h" placeholder="距地高"></div>
+  </div>
+
+  <!-- 報價單品項 -->
+  <div id="sec-quote">
+    <div class="sec">品項規格</div>
+    <table class="items-tbl"><thead><tr>
+      <th style="width:8%">項目</th><th>型號/品名/規格</th>
+      <th style="width:13%">數量</th><th style="width:17%">單價</th><th style="width:17%">總價</th>
+    </tr></thead><tbody id="items-body"></tbody></table>
+    <button class="add-btn" onclick="addRow()">＋ 新增品項</button>
+    <div class="f"><label>備註</label><textarea id="quote_note" placeholder="備註..." rows="2"></textarea></div>
+  </div>
+
+  <!-- 車廂訂購單規格 -->
+  <div id="sec-order" class="hidden">
+    <div class="sec">車廂規格</div>
+    <div class="g2">
+      <div class="f"><label>外板</label><input type="text" id="outer_panel" placeholder="外板規格"></div>
+      <div class="f"><label>內板</label><input type="text" id="inner_panel" placeholder="內板規格"></div>
+    </div>
+    <div class="f"><label>內底板</label><input type="text" id="floor_panel" placeholder="內底板規格"></div>
+    <div class="chk-wrap">
+      <label class="chk-item"><input type="checkbox" id="ck_floor_reinforce"> 底板補強</label>
+    </div>
+    <div class="f"><label>其他</label><input type="text" id="other_spec" placeholder="其他規格"></div>
+    <div class="g2">
+      <div class="f"><label>門板(駕駛邊)</label><input type="text" id="door_d" placeholder="規格"></div>
+      <div class="f"><label>門板(副駕邊)</label><input type="text" id="door_p" placeholder="規格"></div>
+    </div>
+    <div class="g2">
+      <div class="f"><label>門板(後門)</label><input type="text" id="door_r" placeholder="規格"></div>
+      <div class="f"><label>其他門</label><input type="text" id="door_other" placeholder="其他"></div>
+    </div>
+    <div class="g2">
+      <div class="f"><label>日本鎖(2組)</label><input type="text" id="lock" placeholder="數量"></div>
+      <div class="f"><label>門勾練+手把架</label><input type="text" id="door_handle" placeholder="數量"></div>
+    </div>
+    <div class="g2">
+      <div class="f"><label>後扭配件(3組)</label><input type="text" id="rear_parts" placeholder="數量"></div>
+      <div class="f"><label>其他五金</label><input type="text" id="hardware_other" placeholder="其他"></div>
+    </div>
+    <div class="sec">燈具</div>
+    <div class="g2">
+      <div class="f"><label>LED室內條燈(2條)</label><input type="text" id="led_inner" placeholder="數量"></div>
+      <div class="f"><label>邊燈+架</label><input type="text" id="side_light" placeholder="數量"></div>
+    </div>
+    <div class="g2">
+      <div class="f"><label>角燈(輪廓燈)</label><input type="text" id="corner_light" placeholder="數量"></div>
+      <div class="f"><label>其他燈具</label><input type="text" id="light_other" placeholder="其他"></div>
+    </div>
+    <div class="chk-wrap">
+      <label class="chk-item"><input type="checkbox" id="ck_reflex"> 認證澄反光標示(7.5T以下不用)</label>
+    </div>
+    <div class="sec">配件</div>
+    <div class="g2">
+      <div class="f"><label>新式護欄(1式)</label><input type="text" id="railing" placeholder="數量/規格"></div>
+      <div class="f"><label>防撞腳踢板(含門)</label><input type="text" id="kick_board" placeholder="數量"></div>
+    </div>
+    <div class="g2">
+      <div class="f"><label>門防撞塊(2個)</label><input type="text" id="door_block" placeholder="數量"></div>
+      <div class="f"><label>後門防撞塊</label><input type="text" id="rear_block" placeholder="數量"></div>
+    </div>
+    <div class="g2">
+      <div class="f"><label>綁帶架</label><input type="text" id="strap_rack" placeholder="數量"></div>
+      <div class="f"><label>綁帶凹槽</label><input type="text" id="strap_slot" placeholder="數量"></div>
+    </div>
+    <div class="g2">
+      <div class="f"><label>綁帶繩</label><input type="text" id="strap_rope" placeholder="數量"></div>
+      <div class="f"><label>排水孔</label><input type="text" id="drain" placeholder="數量"></div>
+    </div>
+    <div class="g2">
+      <div class="f"><label>排水溝</label><input type="text" id="drain_channel" placeholder="數量"></div>
+      <div class="f"><label>滅火器座</label><input type="text" id="fire_ext" placeholder="數量"></div>
+    </div>
+    <div class="g2">
+      <div class="f"><label>工具箱</label><input type="text" id="tool_box" placeholder="數量"></div>
+      <div class="f"><label>尾門</label><input type="text" id="tail_gate" placeholder="規格"></div>
+    </div>
+    <div class="f"><label>其他配件</label><input type="text" id="acc_other" placeholder="其他"></div>
+    <div class="chk-wrap">
+      <label class="chk-item"><input type="checkbox" id="ck_trailer"> 拖板車架(小牛車架)</label>
+      <label class="chk-item"><input type="checkbox" id="ck_stainless"> 白鐵配件</label>
+      <label class="chk-item"><input type="checkbox" id="ck_switchbox"> 電源開關箱</label>
+      <label class="chk-item"><input type="checkbox" id="ck_cert_ext"> 認證延伸</label>
+    </div>
+    <div class="g2">
+      <div class="f"><label>冷凍隔板</label><input type="text" id="freeze_panel" placeholder="數量/規格"></div>
+      <div class="f"><label>內埋式風導</label><input type="text" id="air_guide" placeholder="數量"></div>
+    </div>
+    <div class="f"><label>工作梯</label><input type="text" id="work_ladder" placeholder="數量"></div>
+    <div class="f"><label>其他</label><input type="text" id="other_all" placeholder="其他"></div>
+    <div class="sec">冷凍機組</div>
+    <div class="f"><label>型號</label><input type="text" id="freezer_model" placeholder="型號"></div>
+    <div class="chk-wrap">
+      <label class="chk-item"><input type="checkbox" id="ck_frame"> 機組架(內埋鐵包框)</label>
+      <label class="chk-item"><input type="checkbox" id="ck_cut"> 機組切角</label>
+    </div>
+    <div class="f"><label>其他</label><input type="text" id="freezer_other" placeholder="其他冷凍機相關"></div>
+  </div>
+
+  <div class="sec">價格</div>
+  <table class="price-tbl">
+    <tr><td>車廂價格</td><td><input type="text" id="price_body" placeholder="0" style="text-align:right"></td></tr>
+    <tr><td>機組價格</td><td><input type="text" id="price_unit" placeholder="0" style="text-align:right"></td></tr>
+    <tr><td>尾門價格</td><td><input type="text" id="price_tail" placeholder="0" style="text-align:right"></td></tr>
+    <tr><td>稅金 5%</td><td><input type="text" id="price_tax" placeholder="0" style="text-align:right"></td></tr>
+    <tr class="tot"><td>總計</td><td><input type="text" id="price_total" placeholder="0" style="text-align:right;font-weight:700"></td></tr>
+  </table>
+</div>
+</div>
+
+<!-- 歷史紀錄頁 -->
+<div id="page-records" class="hidden">
+<div class="wrap">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div style="font-size:18px;font-weight:600">歷史紀錄</div>
+    <span id="rec-count" style="font-size:13px;color:#9b9b9b"></span>
+  </div>
+  <input type="search" id="search-kw" placeholder="搜尋單號、客戶..." oninput="renderRecs()"
+    style="width:100%;border:1px solid #d0cec8;border-radius:8px;padding:9px 12px;font-size:14px;background:#fff;outline:none;margin-bottom:10px">
+  <div class="status-bar">
+    <button class="status-btn on" id="sf-all" onclick="setFilter('all')">全部</button>
+    <button class="status-btn" id="sf-pending" onclick="setFilter('pending')">待確認</button>
+    <button class="status-btn" id="sf-confirmed" onclick="setFilter('confirmed')">已確認</button>
+    <button class="status-btn" id="sf-done" onclick="setFilter('done')">完成</button>
+    <button class="status-btn" id="sf-cancel" onclick="setFilter('cancel')">取消</button>
+  </div>
+  <div id="rec-list"></div>
+</div>
+</div>
+
+<div class="btmbar" id="btmbar">
+  <div class="btmbar-inner">
+    <button class="btn btn-clr" onclick="doClear()">清除</button>
+    <button class="btn btn-pdf" onclick="doPDF()">輸出 PDF</button>
+    <button class="btn btn-save" onclick="doSave()">儲存</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var STORE='yiju_quote_v3';
+var curCo='junjia';
+var curType='quote';
+var curId=null;
+var curFilter='all';
+var rowCount=0;
+
+var STATUS={
+  pending:  {label:'待確認', color:'#856404', bg:'#fff3cd', border:'#ffc107'},
+  confirmed:{label:'已確認', color:'#0c447c', bg:'#e6f1fb', border:'#b5d4f4'},
+  done:     {label:'完成',   color:'#27500a', bg:'#eaf3de', border:'#c0dd97'},
+  cancel:   {label:'取消',   color:'#a32d2d', bg:'#fef2f2', border:'#f09595'}
+};
+
+var COS={
+  junjia:{name:'駿家企業有限公司', logo:'https://line-inquiry.vercel.app/logo-junjia.jpg', bank:'匯款帳戶：駿家企業有限公司　銀行帳號：新光銀行(103)永安分行0949-10-002027-1'},
+  smm:   {name:'smm勝盟機械有限公司', logo:'https://line-inquiry.vercel.app/logo-smm.jpg', bank:''}
+};
+
+function goTab(t){
+  document.getElementById('page-form').classList.toggle('hidden',t!=='form');
+  document.getElementById('page-records').classList.toggle('hidden',t!=='records');
+  document.getElementById('btmbar').classList.toggle('hidden',t!=='form');
+  document.getElementById('tab-form').classList.toggle('on',t==='form');
+  document.getElementById('tab-records').classList.toggle('on',t==='records');
+  if(t==='records') renderRecs();
+}
+
+function setCo(c){
+  curCo=c;
+  document.getElementById('co-junjia').classList.toggle('on',c==='junjia');
+  document.getElementById('co-smm').classList.toggle('on',c==='smm');
+  toast(COS[c].name);
+}
+
+function setType(t){
+  curType=t;
+  document.getElementById('tp-quote').classList.toggle('on',t==='quote');
+  document.getElementById('tp-order').classList.toggle('on',t==='order');
+  document.getElementById('sec-quote').classList.toggle('hidden',t!=='quote');
+  document.getElementById('sec-order').classList.toggle('hidden',t!=='order');
+}
+
+function setFilter(f){
+  curFilter=f;
+  ['all','pending','confirmed','done','cancel'].forEach(function(k){
+    document.getElementById('sf-'+k).classList.toggle('on',k===f);
+    var s=STATUS[k];
+    var btn=document.getElementById('sf-'+k);
+    if(k===f && s){
+      btn.style.background=s.bg;
+      btn.style.borderColor=s.border;
+      btn.style.color=s.color;
+    } else {
+      btn.style.background='';btn.style.borderColor='';btn.style.color='';
+    }
+  });
+  if(f==='all'){
+    var btn=document.getElementById('sf-all');
+    btn.style.background='#1a1a1a';btn.style.color='#fff';btn.style.borderColor='#1a1a1a';
+  }
+  renderRecs();
+}
+
+function addRow(){
+  rowCount++;
+  var tb=document.getElementById('items-body');
+  var tr=document.createElement('tr');
+  tr.innerHTML='<td><input type="text" style="width:100%" placeholder="'+rowCount+'"></td>'
+    +'<td><input type="text" placeholder="品名/規格"></td>'
+    +'<td><input type="number" placeholder="1"></td>'
+    +'<td><input type="text" placeholder="金額"></td>'
+    +'<td><input type="text" placeholder="金額"></td>';
+  tb.appendChild(tr);
+}
+
+function initRows(){
+  document.getElementById('items-body').innerHTML='';
+  rowCount=0;
+  for(var i=0;i<8;i++) addRow();
+}
+
+function gv(id){var e=document.getElementById(id);return e?e.value||'':'';}
+function gc(id){var e=document.getElementById(id);return e?e.checked:false;}
+
+function collect(){
+  var d={
+    id:curId||('Q'+Date.now()),company:curCo,type:curType,
+    status:'pending',
+    _saved:new Date().toLocaleDateString('zh-TW'),
+    doc_no:gv('doc_no'),doc_date:gv('doc_date'),customer:gv('customer'),
+    contact:gv('contact'),tax_id:gv('tax_id'),phone:gv('phone'),
+    mobile:gv('mobile'),address:gv('address'),car_type:gv('car_type'),
+    chassis:gv('chassis'),engine_no:gv('engine_no'),vin:gv('vin'),
+    thickness:gv('thickness'),out_size:gv('out_size'),in_size:gv('in_size'),ground_h:gv('ground_h'),
+    price_body:gv('price_body'),price_unit:gv('price_unit'),price_tail:gv('price_tail'),
+    price_tax:gv('price_tax'),price_total:gv('price_total')
+  };
+  // 保留原有狀態
+  if(curId){
+    var existing=loadAll().find(function(r){return r.id===curId;});
+    if(existing) d.status=existing.status;
+  }
+  if(curType==='quote'){
+    d.quote_note=gv('quote_note');
+    d.items=[];
+    document.querySelectorAll('#items-body tr').forEach(function(tr){
+      var ins=tr.querySelectorAll('input');
+      d.items.push({no:ins[0].value,name:ins[1].value,qty:ins[2].value,unit:ins[3].value,total:ins[4].value});
+    });
+  } else {
+    d.outer_panel=gv('outer_panel');d.inner_panel=gv('inner_panel');d.floor_panel=gv('floor_panel');
+    d.ck_floor_reinforce=gc('ck_floor_reinforce');d.other_spec=gv('other_spec');
+    d.door_d=gv('door_d');d.door_p=gv('door_p');d.door_r=gv('door_r');d.door_other=gv('door_other');
+    d.lock=gv('lock');d.door_handle=gv('door_handle');d.rear_parts=gv('rear_parts');d.hardware_other=gv('hardware_other');
+    d.led_inner=gv('led_inner');d.side_light=gv('side_light');d.corner_light=gv('corner_light');
+    d.ck_reflex=gc('ck_reflex');d.light_other=gv('light_other');
+    d.railing=gv('railing');d.kick_board=gv('kick_board');
+    d.door_block=gv('door_block');d.rear_block=gv('rear_block');d.bumper_other=gv('bumper_other');
+    d.strap_rack=gv('strap_rack');d.strap_slot=gv('strap_slot');d.strap_rope=gv('strap_rope');
+    d.drain=gv('drain');d.drain_channel=gv('drain_channel');d.fire_ext=gv('fire_ext');
+    d.tool_box=gv('tool_box');d.tail_gate=gv('tail_gate');d.acc_other=gv('acc_other');
+    d.ck_trailer=gc('ck_trailer');d.ck_stainless=gc('ck_stainless');
+    d.ck_switchbox=gc('ck_switchbox');d.ck_cert_ext=gc('ck_cert_ext');
+    d.freeze_panel=gv('freeze_panel');d.air_guide=gv('air_guide');d.work_ladder=gv('work_ladder');
+    d.other_all=gv('other_all');d.freezer_model=gv('freezer_model');
+    d.ck_frame=gc('ck_frame');d.ck_cut=gc('ck_cut');d.freezer_other=gv('freezer_other');
+  }
+  return d;
+}
+
+function loadAll(){try{return JSON.parse(localStorage.getItem(STORE))||[];}catch(e){return[];}}
+function saveAll(r){try{localStorage.setItem(STORE,JSON.stringify(r));}catch(e){toast('儲存空間不足');}}
+
+function doSave(){
+  var d=collect();
+  var recs=loadAll();
+  var i=recs.findIndex(function(r){return r.id===d.id;});
+  if(i>=0) recs[i]=d; else recs.push(d);
+  saveAll(recs);curId=d.id;toast('已儲存');
+}
+
+function setStatus(id,status){
+  var recs=loadAll();
+  var i=recs.findIndex(function(r){return r.id===id;});
+  if(i>=0){recs[i].status=status;saveAll(recs);}
+  renderRecs();
+  toast(STATUS[status].label);
+}
+
+function doClear(){
+  if(!confirm('確定清除所有資料？')) return;
+  document.querySelectorAll('#page-form input,#page-form textarea').forEach(function(e){
+    if(e.type==='checkbox') e.checked=false; else e.value='';
+  });
+  document.getElementById('doc_date').value=new Date().toISOString().split('T')[0];
+  initRows();curId=null;toast('已清除');
+}
+
+function renderRecs(){
+  var recs=loadAll();
+  var kw=(document.getElementById('search-kw').value||'').toLowerCase();
+  var filtered=recs.filter(function(r){
+    var matchKw=!kw||(r.doc_no||'').toLowerCase().includes(kw)||(r.customer||'').toLowerCase().includes(kw)||(r.contact||'').toLowerCase().includes(kw);
+    var matchStatus=curFilter==='all'||r.status===curFilter;
+    return matchKw&&matchStatus;
+  });
+  document.getElementById('rec-count').textContent=recs.length+' 筆';
+
+  // 按狀態分組
+  var groups=[
+    {key:'pending',  list:[]},
+    {key:'confirmed',list:[]},
+    {key:'done',     list:[]},
+    {key:'cancel',   list:[]}
+  ];
+  filtered.slice().reverse().forEach(function(r){
+    var g=groups.find(function(g){return g.key===(r.status||'pending');});
+    if(g) g.list.push(r);
+  });
+
+  var el=document.getElementById('rec-list');
+  if(!filtered.length){
+    el.innerHTML='<div style="text-align:center;padding:40px 0;color:#9b9b9b">尚無紀錄</div>';
+    return;
+  }
+
+  var html='';
+  groups.forEach(function(g){
+    if(!g.list.length) return;
+    var s=STATUS[g.key];
+    html+='<div class="grp-title" style="color:'+s.color+'">'+s.label+' ('+g.list.length+')</div>';
+    g.list.forEach(function(r){
+      var tl=r.type==='quote'?'報價單':'車廂訂購單';
+      var cl=r.company==='junjia'?'駿家':'smm';
+      var st=STATUS[r.status||'pending'];
+      html+='<div class="rec-card">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
+        +'<span style="font-weight:600">'+(r.doc_no||'（未填單號）')+'</span>'
+        +'<span class="status-tag" style="background:'+st.bg+';color:'+st.color+';border:1px solid '+st.border+'">'+st.label+'</span>'
+        +'</div>'
+        +'<div style="font-size:13px;color:#6b6b6b;margin-bottom:2px">'+cl+' · '+tl+' · '+(r.customer||'')+'</div>'
+        +'<div style="font-size:12px;color:#9b9b9b;margin-bottom:8px">'+(r._saved||'')+(r.price_total?' · 總計：'+r.price_total:'')+'</div>'
+        +'<div class="rec-actions">'
+        +'<button class="rec-act" onclick="openRec(\''+r.id+'\')">編輯</button>'
+        +'<button class="rec-act" style="border-color:#b5d4f4;color:#0c447c;background:#e6f1fb" onclick="pdfRec(\''+r.id+'\')">PDF</button>'
+        +'</div>'
+        +'<div class="rec-actions" style="margin-top:6px">'
+        +(r.status!=='pending'  ?'<button class="rec-act" onclick="setStatus(\''+r.id+'\',\'pending\')"  style="font-size:11px;color:#856404;border-color:#ffc107;background:#fff3cd">待確認</button>':'' )
+        +(r.status!=='confirmed'?'<button class="rec-act" onclick="setStatus(\''+r.id+'\',\'confirmed\')" style="font-size:11px;color:#0c447c;border-color:#b5d4f4;background:#e6f1fb">已確認</button>':'' )
+        +(r.status!=='done'     ?'<button class="rec-act" onclick="setStatus(\''+r.id+'\',\'done\')"      style="font-size:11px;color:#27500a;border-color:#c0dd97;background:#eaf3de">完成</button>':'' )
+        +(r.status!=='cancel'   ?'<button class="rec-act" onclick="setStatus(\''+r.id+'\',\'cancel\')"    style="font-size:11px;color:#a32d2d;border-color:#f09595;background:#fef2f2">取消</button>':'' )
+        +'<button class="rec-act" onclick="delRec(\''+r.id+'\')" style="font-size:11px;color:#a32d2d;border-color:#f09595">刪除</button>'
+        +'</div>'
+        +'</div>';
+    });
+  });
+  el.innerHTML=html;
+}
+
+function openRec(id){
+  var r=loadAll().find(function(x){return x.id===id;});
+  if(!r) return;
+  doClear();setCo(r.company||'junjia');setType(r.type||'quote');curId=r.id;
+  var fs=['doc_no','doc_date','customer','contact','tax_id','phone','mobile','address',
+    'car_type','chassis','engine_no','vin','thickness','out_size','in_size','ground_h',
+    'price_body','price_unit','price_tail','price_tax','price_total','quote_note',
+    'outer_panel','inner_panel','floor_panel','other_spec','door_d','door_p','door_r','door_other',
+    'lock','door_handle','rear_parts','hardware_other','led_inner','side_light','corner_light','light_other',
+    'railing','kick_board','door_block','rear_block','bumper_other','strap_rack','strap_slot','strap_rope',
+    'drain','drain_channel','fire_ext','tool_box','tail_gate','acc_other',
+    'freeze_panel','air_guide','work_ladder','freezer_other','other_all','freezer_model'];
+  fs.forEach(function(f){var e=document.getElementById(f);if(e&&r[f]!==undefined)e.value=r[f];});
+  var cks=['ck_floor_reinforce','ck_reflex','ck_trailer','ck_stainless','ck_switchbox','ck_cert_ext','ck_frame','ck_cut'];
+  cks.forEach(function(k){var e=document.getElementById(k);if(e)e.checked=!!r[k];});
+  if(r.items){
+    document.getElementById('items-body').innerHTML='';rowCount=0;
+    r.items.forEach(function(row){
+      addRow();
+      var tr=document.getElementById('items-body').lastElementChild;
+      var ins=tr.querySelectorAll('input');
+      ins[0].value=row.no||'';ins[1].value=row.name||'';
+      ins[2].value=row.qty||'';ins[3].value=row.unit||'';ins[4].value=row.total||'';
+    });
+  }
+  goTab('form');
+}
+
+function delRec(id){
+  if(!confirm('確定刪除？')) return;
+  saveAll(loadAll().filter(function(r){return r.id!==id;}));
+  renderRecs();toast('已刪除');
+}
+
+function pdfRec(id){
+  var r=loadAll().find(function(x){return x.id===id;});
+  if(r) genPDF(r);
+}
+
+function doPDF(){genPDF(collect());}
+
+function ck(val){return val?'☑':'□';}
+
+function genPDF(d){
+  var co=COS[d.company||'junjia'];
+  var isO=d.type==='order';
+  var title=isO?'車廂訂購單':'報價單';
+  var dateStr=d.doc_date||'___/___/___';
+
+  function r2(l1,v1,l2,v2){
+    return '<tr>'
+      +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:11px;color:#555;background:#f8f8f8;width:15%;white-space:nowrap">'+l1+'</td>'
+      +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:12px;width:35%">'+(v1||'')+'</td>'
+      +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:11px;color:#555;background:#f8f8f8;width:15%;white-space:nowrap">'+l2+'</td>'
+      +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:12px;width:35%">'+(v2||'')+'</td>'
+      +'</tr>';
+  }
+
+  var itemsHtml='';
+  if(!isO&&d.items){
+    itemsHtml='<table style="width:100%;border-collapse:collapse;margin-bottom:8px"><thead>'
+      +'<tr style="background:#e8e8e8"><th style="border:1px solid #999;padding:5px;font-size:11px;width:6%">項目</th>'
+      +'<th style="border:1px solid #999;padding:5px;font-size:11px">型號/品名/規格</th>'
+      +'<th style="border:1px solid #999;padding:5px;font-size:11px;width:10%">數量</th>'
+      +'<th style="border:1px solid #999;padding:5px;font-size:11px;width:14%">單價</th>'
+      +'<th style="border:1px solid #999;padding:5px;font-size:11px;width:14%">總價</th></tr></thead><tbody>';
+    d.items.forEach(function(row){
+      itemsHtml+='<tr>'
+        +'<td style="border:1px solid #ddd;padding:7px 5px;font-size:12px">'+(row.no||'')+'</td>'
+        +'<td style="border:1px solid #ddd;padding:7px 5px;font-size:12px">'+(row.name||'')+'</td>'
+        +'<td style="border:1px solid #ddd;padding:7px 5px;font-size:12px;text-align:center">'+(row.qty||'')+'</td>'
+        +'<td style="border:1px solid #ddd;padding:7px 5px;font-size:12px;text-align:right">'+(row.unit||'')+'</td>'
+        +'<td style="border:1px solid #ddd;padding:7px 5px;font-size:12px;text-align:right">'+(row.total||'')+'</td></tr>';
+    });
+    for(var i=d.items.length;i<12;i++){
+      itemsHtml+='<tr><td style="border:1px solid #ddd;padding:9px 5px">&nbsp;</td><td style="border:1px solid #ddd"></td><td style="border:1px solid #ddd"></td><td style="border:1px solid #ddd"></td><td style="border:1px solid #ddd"></td></tr>';
+    }
+    itemsHtml+='</tbody></table>';
+    if(d.quote_note) itemsHtml+='<div style="font-size:12px;margin-bottom:8px">備註：'+d.quote_note+'</div>';
+  }
+
+  var orderHtml='';
+  if(isO){
+    orderHtml='<div style="background:#555;color:#fff;text-align:center;font-weight:700;padding:4px;margin-bottom:4px;font-size:12px">車廂規格</div>'
+      +'<table style="width:100%;border-collapse:collapse;margin-bottom:6px">'
+      +r2('外板',d.outer_panel,'內板',d.inner_panel)
+      +'<tr><td style="border:1px solid #ccc;padding:5px 7px;font-size:11px;color:#555;background:#f8f8f8">內底板</td>'
+      +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:12px" colspan="3">'+(d.floor_panel||'')+'　'+ck(d.ck_floor_reinforce)+'底板補強</td></tr>'
+      +'<tr><td style="border:1px solid #ccc;padding:5px 7px;font-size:11px;color:#555;background:#f8f8f8">其他</td>'
+      +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:12px" colspan="3">'+(d.other_spec||'')+'</td></tr>'
+      +r2('門板(駕駛邊)',d.door_d,'門板(副駕邊)',d.door_p)
+      +r2('門板(後門)',d.door_r,'其他',d.door_other)
+      +r2('日本鎖(2組)',d.lock,'門勾練+手把架(1式)',d.door_handle)
+      +r2('後扭配件(3組)',d.rear_parts,'其他',d.hardware_other)
+      +'</table>'
+      +'<div style="background:#555;color:#fff;text-align:center;font-weight:700;padding:4px;margin-bottom:4px;font-size:12px">燈具</div>'
+      +'<table style="width:100%;border-collapse:collapse;margin-bottom:6px">'
+      +r2('LED室內條燈(2條)',d.led_inner,'邊燈+架',d.side_light)
+      +'<tr><td style="border:1px solid #ccc;padding:5px 7px;font-size:11px;color:#555;background:#f8f8f8">角燈(輪廓燈)</td>'
+      +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:12px">'+(d.corner_light||'')+'</td>'
+      +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:12px" colspan="2">'+ck(d.ck_reflex)+'認證澄反光標示(7.5T以下不用)</td></tr>'
+      +'<tr><td style="border:1px solid #ccc;padding:5px 7px;font-size:11px;color:#555;background:#f8f8f8">其他</td>'
+      +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:12px" colspan="3">'+(d.light_other||'')+'</td></tr>'
+      +'</table>'
+      +'<div style="background:#555;color:#fff;text-align:center;font-weight:700;padding:4px;margin-bottom:4px;font-size:12px">配件</div>'
+      +'<table style="width:100%;border-collapse:collapse;margin-bottom:6px">'
+      +r2('新式護欄(1式)',d.railing,'防撞腳踢板(含門)',d.kick_board)
+      +r2('門防撞塊(2個)',d.door_block,'後門防撞塊',d.rear_block)
+      +r2('綁帶架',d.strap_rack,'綁帶凹槽',d.strap_slot)
+      +r2('綁帶繩',d.strap_rope,'排水孔',d.drain)
+      +r2('排水溝',d.drain_channel,'滅火器座',d.fire_ext)
+      +r2('工具箱',d.tool_box,'尾門',d.tail_gate)
+      +'<tr><td style="border:1px solid #ccc;padding:5px 7px;font-size:11px;color:#555;background:#f8f8f8">其他</td>'
+      +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:12px">'+(d.acc_other||'')+'</td>'
+      +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:12px" colspan="2">'+ck(d.ck_trailer)+'拖板車架　'+ck(d.ck_stainless)+'白鐵配件</td></tr>'
+      +r2('冷凍隔板',d.freeze_panel,'內埋式風導',d.air_guide)
+      +'<tr><td style="border:1px solid #ccc;padding:5px 7px;font-size:11px;color:#555;background:#f8f8f8">工作梯</td>'
+      +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:12px">'+(d.work_ladder||'')+'</td>'
+      +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:12px" colspan="2">'+ck(d.ck_switchbox)+'電源開關箱　'+ck(d.ck_cert_ext)+'認證延伸</td></tr>'
+      +'<tr><td style="border:1px solid #ccc;padding:5px 7px;font-size:11px;color:#555;background:#f8f8f8">其他</td>'
+      +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:12px" colspan="3">'+(d.other_all||'')+'</td></tr>'
+      +'</table>'
+      +'<div style="background:#555;color:#fff;text-align:center;font-weight:700;padding:4px;margin-bottom:4px;font-size:12px">冷凍機組</div>'
+      +'<table style="width:100%;border-collapse:collapse;margin-bottom:6px">'
+      +'<tr><td style="border:1px solid #ccc;padding:5px 7px;font-size:11px;color:#555;background:#f8f8f8;width:15%">型號</td>'
+      +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:12px" colspan="3">'+(d.freezer_model||'')+'　'+ck(d.ck_frame)+'機組架(內埋鐵包框)　'+ck(d.ck_cut)+'機組切角</td></tr>'
+      +'<tr><td style="border:1px solid #ccc;padding:5px 7px;font-size:11px;color:#555;background:#f8f8f8">其他</td>'
+      +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:12px" colspan="3">'+(d.freezer_other||'')+'</td></tr>'
+      +'</table>';
+  }
+
+  var terms='<div style="font-size:10px;color:#333;line-height:1.65;margin-top:8px">'
+    +'・本報價單有效期限為14天。<br>'
+    +'・雙方依訂購單所定尺寸、施工內容確認無誤後進行施作，如有變更標準配備材質、規格及尺寸，須依實際狀況補差額；特殊規格價格另計。<br>'
+    +'・放車前請務必先聯絡廠內，否則拒收；本公司僅提供場地放車並不負任何保管責任。<br>'
+    +'・車廂訂製期：45~60個工作天(依據車型大小不同)，不含休假日，並依據本廠排單順序依序製作。<br>'
+    +'・保固範圍：車廂原廠保固一年，不含耗品、維修、工資等其他費用。機組原廠保固一年，只提供零配件，不含安裝、維修及工資等費用。<br>'
+    +'・付款條件：訂單確認後，請預先支付訂金30%；尾款於安裝完成交車後付清。<br>'
+    +'・回簽本單後視同正式採購合約，本契約之解釋、效力及其他未盡事宜，皆以相關法律為準則。如有訴訟之必要，雙方同意以台中地方法院為第一審管轄法院。<br>'
+    +(co.bank?'・'+co.bank+'<br>':'')
+    +'</div>';
+
+  var logoHtml='<img src="'+co.logo+'" style="height:48px;object-fit:contain" onerror="this.style.display=\'none\'">';
+
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+title+'</title>'
+    +'<style>body{font-family:"PingFang TC","Noto Sans TC",serif;padding:20px;color:#222;max-width:800px;margin:auto}'
+    +'@media print{.np{display:none}}</style></head><body>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+    +logoHtml
+    +'<div style="font-size:12px;color:#555">日期：'+dateStr+'</div></div>'
+    +'<div style="text-align:center;font-size:17px;font-weight:700;border:2px solid #333;padding:5px;margin-bottom:8px;background:#eee">'+title+'</div>'
+    +'<table style="width:100%;border-collapse:collapse;margin-bottom:8px">'
+    +'<tr><td style="border:1px solid #ccc;padding:5px 7px;font-size:11px;color:#555;background:#f8f8f8;width:10%">單號</td>'
+    +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:13px;font-weight:600;width:20%">'+(d.doc_no||'')+'</td>'
+    +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:11px;color:#555;background:#f8f8f8;width:10%">客戶</td>'
+    +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:13px;width:25%">'+(d.customer||'')+'</td>'
+    +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:11px;color:#555;background:#f8f8f8;width:10%">聯絡人</td>'
+    +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:13px;width:25%">'+(d.contact||'')+'</td></tr>'
+    +'<tr><td style="border:1px solid #ccc;padding:5px 7px;font-size:11px;color:#555;background:#f8f8f8">統編</td>'
+    +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:12px">'+(d.tax_id||'')+'</td>'
+    +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:11px;color:#555;background:#f8f8f8">電話</td>'
+    +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:12px">'+(d.phone||'')+'</td>'
+    +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:11px;color:#555;background:#f8f8f8">手機</td>'
+    +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:12px">'+(d.mobile||'')+'</td></tr>'
+    +'<tr><td style="border:1px solid #ccc;padding:5px 7px;font-size:11px;color:#555;background:#f8f8f8">地址</td>'
+    +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:12px" colspan="5">'+(d.address||'')+'</td></tr>'
+    +'<tr><td style="border:1px solid #ccc;padding:5px 7px;font-size:11px;color:#555;background:#f8f8f8">車種/數量</td>'
+    +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:12px">'+(d.car_type||'')+'</td>'
+    +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:11px;color:#555;background:#f8f8f8">底盤型式</td>'
+    +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:12px">'+(d.chassis||'')+'</td>'
+    +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:11px;color:#555;background:#f8f8f8">引擎號碼</td>'
+    +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:12px">'+(d.engine_no||'')+'</td></tr>'
+    +'<tr><td style="border:1px solid #ccc;padding:5px 7px;font-size:11px;color:#555;background:#f8f8f8">車身號碼</td>'
+    +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:12px">'+(d.vin||'')+'</td>'
+    +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:11px;color:#555;background:#f8f8f8">車廂厚度</td>'
+    +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:12px">'+(d.thickness||'')+'</td>'
+    +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:11px;color:#555;background:#f8f8f8">外尺寸</td>'
+    +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:12px">'+(d.out_size||'')+'</td></tr>'
+    +'<tr><td style="border:1px solid #ccc;padding:5px 7px;font-size:11px;color:#555;background:#f8f8f8">內尺寸</td>'
+    +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:12px">'+(d.in_size||'')+'</td>'
+    +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:11px;color:#555;background:#f8f8f8">距地高</td>'
+    +'<td style="border:1px solid #ccc;padding:5px 7px;font-size:12px">'+(d.ground_h||'')+'</td>'
+    +'<td style="border:1px solid #ccc;padding:5px 7px" colspan="2"></td></tr>'
+    +'</table>'
+    +itemsHtml+orderHtml
+    +'<table style="width:100%;border-collapse:collapse;margin-bottom:8px">'
+    +'<tr style="background:#333;color:#fff">'
+    +'<th style="border:1px solid #555;padding:7px;font-size:12px;text-align:center">車廂價格</th>'
+    +'<th style="border:1px solid #555;padding:7px;font-size:12px;text-align:center">機組價格</th>'
+    +'<th style="border:1px solid #555;padding:7px;font-size:12px;text-align:center">尾門價格</th>'
+    +'<th style="border:1px solid #555;padding:7px;font-size:12px;text-align:center">稅金5%</th>'
+    +'<th style="border:1px solid #555;padding:7px;font-size:12px;text-align:center">總計</th></tr>'
+    +'<tr><td style="border:1px solid #ccc;padding:10px;text-align:center;font-size:13px">'+(d.price_body||'')+'</td>'
+    +'<td style="border:1px solid #ccc;padding:10px;text-align:center;font-size:13px">'+(d.price_unit||'')+'</td>'
+    +'<td style="border:1px solid #ccc;padding:10px;text-align:center;font-size:13px">'+(d.price_tail||'')+'</td>'
+    +'<td style="border:1px solid #ccc;padding:10px;text-align:center;font-size:13px">'+(d.price_tax||'')+'</td>'
+    +'<td style="border:1px solid #ccc;padding:10px;text-align:center;font-size:13px;font-weight:700">'+(d.price_total||'')+'</td></tr>'
+    +'</table>'
+    +terms
+    +'<div style="display:flex;justify-content:space-around;margin-top:24px;font-size:13px">'
+    +'<div style="text-align:center">客戶簽名<div style="margin-top:30px;border-top:1px solid #999;width:150px"></div></div>'
+    +'<div style="text-align:center">公司簽名<div style="margin-top:30px;border-top:1px solid #999;width:150px"></div></div>'
+    +'</div><br>'
+    +'<button class="np" onclick="window.print()" style="padding:8px 20px;font-size:14px;cursor:pointer">列印 / 儲存 PDF</button>'
+    +'</body></html>';
+
+  var blob=new Blob([html],{type:'text/html;charset=utf-8'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=(isO?'車廂訂購單_':'報價單_')+(d.doc_no||'未命名')+'.html';
+  a.click();
+}
+
+function toast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg;t.style.opacity='1';
+  setTimeout(function(){t.style.opacity='0';},2000);
+}
+
+document.getElementById('doc_date').value=new Date().toISOString().split('T')[0];
+initRows();
+setFilter('all');
+</script>
+</body>
+</html>
