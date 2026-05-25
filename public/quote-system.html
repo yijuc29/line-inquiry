@@ -400,13 +400,18 @@ function setStatus(id,status){
   toast(STATUS[status].label);
 }
 
-function doClear(){
-  if(!confirm('確定清除所有資料？')) return;
+function clearForm(){
   document.querySelectorAll('#page-form input,#page-form textarea').forEach(function(e){
     if(e.type==='checkbox') e.checked=false; else e.value='';
   });
   document.getElementById('doc_date').value=new Date().toISOString().split('T')[0];
-  initRows();curId=null;toast('已清除');
+  initRows();curId=null;
+}
+
+function doClear(){
+  if(!confirm('確定清除所有資料？')) return;
+  clearForm();
+  toast('已清除');
 }
 
 function renderRecs(){
@@ -473,7 +478,7 @@ function renderRecs(){
 function openRec(id){
   var r=loadAll().find(function(x){return x.id===id;});
   if(!r) return;
-  doClear();setCo(r.company||'junjia');setType(r.type||'quote');curId=r.id;
+  clearForm();setCo(r.company||'junjia');setType(r.type||'quote');curId=r.id;
   var fs=['doc_no','doc_date','customer','contact','tax_id','phone','mobile','address',
     'car_type','chassis','engine_no','vin','thickness','out_size','in_size','ground_h',
     'price_body','price_unit','price_tail','price_tax','price_total','quote_note',
