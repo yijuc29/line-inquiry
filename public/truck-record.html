@@ -405,8 +405,12 @@ function saveRecords(recs){
 function syncToSheets(rec){
   var cbName='truckSync_'+Date.now();
   var script=document.createElement('script');
-  var payload=encodeURIComponent(JSON.stringify(rec));
-  window[cbName]=function(){delete window[cbName];if(script.parentNode)script.parentNode.removeChild(script);};
+  // 排除照片 Base64（照片只存本機），避免 URL 超長導致 Apps Script 收不到資料
+  var clean=JSON.parse(JSON.stringify(rec));
+  PHOTO_FIELDS.forEach(function(f){delete clean[f];});
+  delete clean.slots;
+  var payload=encodeURIComponent(JSON.stringify(clean));
+  window[cbName]=function(res){delete window[cbName];if(script.parentNode)script.parentNode.removeChild(script);};
   script.onerror=function(){delete window[cbName];if(script.parentNode)script.parentNode.removeChild(script);};
   script.src=SHEETS_URL+'?action=truck_write&data='+payload+'&callback='+cbName;
   document.body.appendChild(script);
@@ -431,19 +435,41 @@ function fetchFromSheets(){
   document.body.appendChild(script);
 }
 
+// 中文表頭 → 英文欄位 完整對照（對應 Apps Script 的 getTruckHeaders / buildTruckRow）
+var SHEET_MAP={
+  '紀錄ID':'id','訂單編號':'order_no','施作日':'date_work','車型':'car_type','噸數':'ton',
+  '入廠日':'date_in','底盤型式':'chassis','引擎號碼':'engine_no','車身號碼':'vin',
+  '預估外長':'pre_ol','預估外寬':'pre_ow','預估外高':'pre_oh',
+  '預估內長':'pre_il','預估內寬':'pre_iw','預估內高':'pre_ih','預估距地高':'pre_ground',
+  '廂體板材':'panel_mat','軸距':'axle_dist','最遠軸距':'axle_far','前輪距':'wheel_f','後輪距':'wheel_r',
+  '冷凍機型號':'ref_model','機組編號':'ref_unit_no','散熱路':'ref_cond','蒸發路':'ref_evap',
+  '冷凍機安裝日':'ref_date','發動機型號':'ref_eng_m','發動機序列號':'ref_eng_s',
+  '實作外長':'act_ol','實作外寬':'act_ow','實作外高':'act_oh',
+  '實作內長':'act_il','實作內寬':'act_iw','實作內高':'act_ih',
+  '實際距地高':'act_ground','後懸':'rear_oh','完成車全長':'car_total_length',
+  '車輛空重':'w_empty','前軸重':'w_front','後軸重':'w_rear','備胎':'spare',
+  '第9項距末端':'ref9','第12項距地高':'ref12','第13項上緣距地高':'ref13_top',
+  '第14項距車頂':'ref14','第15項距煞車燈':'ref15',
+  '燈具廠商':'lamp_vendor','檢測日期':'date_inspect','080檢測日期':'date_080',
+  '送交通部日期':'date_submit','合格證派發日期':'date_cert','認證型式編號':'cert_type',
+  '備註':'note','建立時間':'_saved'
+};
+
 function mergeFromSheets(sheetsRecs){
   var local=loadRecords();
-  var localIds={};
-  local.forEach(function(r){localIds[r.id]=true;});
+  var localMap={};
+  local.forEach(function(r){localMap[r.id]=true;});
   sheetsRecs.forEach(function(sr){
     var id=sr['紀錄ID'];
-    if(!id||localIds[id])return;
-    local.push({
-      id:id, order_no:sr['訂單編號']||'', date_work:sr['施作日']||'',
-      car_type:sr['車型']||'', ton:sr['噸數']||'', date_in:sr['入廠日']||'',
-      chassis:sr['底盤型式']||'', engine_no:sr['引擎號碼']||'', vin:sr['車身號碼']||'',
-      _done:sr['狀態']==='已完成', _saved:sr['建立時間']||'', note:sr['備註']||''
-    });
+    if(!id||localMap[id])return; // 沒 ID 或本機已有則跳過
+    var rec={};
+    // 用完整對照表把中文欄位轉回英文 id
+    for(var cn in SHEET_MAP){
+      if(sr[cn]!==undefined&&sr[cn]!=='') rec[SHEET_MAP[cn]]=sr[cn];
+    }
+    rec._done=(sr['狀態']==='已完成');
+    if(!rec.id)rec.id=id;
+    local.push(rec);
   });
   saveRecords(local);
   renderList();
