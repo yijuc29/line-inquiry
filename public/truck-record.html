@@ -457,21 +457,38 @@ var SHEET_MAP={
 
 function mergeFromSheets(sheetsRecs){
   var local=loadRecords();
-  var localMap={};
-  local.forEach(function(r){localMap[r.id]=true;});
+  // 建立本機 id 索引（保留照片用）
+  var localPhotoMap={};
+  local.forEach(function(r){
+    var photos={};
+    PHOTO_FIELDS.forEach(function(f){if(r[f])photos[f]=r[f];});
+    SLOT_IDS.forEach(function(s){if(r[s])photos[s]=r[s];});
+    localPhotoMap[r.id]=photos;
+  });
+  // 雲端覆蓋本機（照片保留）
+  var merged=[];
+  var cloudIds={};
   sheetsRecs.forEach(function(sr){
     var id=sr['紀錄ID'];
-    if(!id||localMap[id])return; // 沒 ID 或本機已有則跳過
+    if(!id)return;
+    cloudIds[id]=true;
     var rec={};
-    // 用完整對照表把中文欄位轉回英文 id
     for(var cn in SHEET_MAP){
       if(sr[cn]!==undefined&&sr[cn]!=='') rec[SHEET_MAP[cn]]=sr[cn];
     }
     rec._done=(sr['狀態']==='已完成');
     if(!rec.id)rec.id=id;
-    local.push(rec);
+    // 把本機照片接回來
+    if(localPhotoMap[id]){
+      for(var f in localPhotoMap[id]) rec[f]=localPhotoMap[id][f];
+    }
+    merged.push(rec);
   });
-  saveRecords(local);
+  // 本機有但雲端沒有的（新填尚未同步上去的）也保留
+  local.forEach(function(r){
+    if(!cloudIds[r.id])merged.push(r);
+  });
+  saveRecords(merged);
   renderList();
 }
 function getStorageKB(){
